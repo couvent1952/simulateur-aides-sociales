@@ -10,6 +10,22 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#c0392b;--green:#16a34a;--amber:#d97706;--blue:#2563eb;--violet:#7c3aed;--border:#e4e4e7;--bg:#f4f3ef;--sur:#fff;--ink:#18181b;--ink2:#52525b;--ink3:#a1a1aa;--r:12px}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.lock-screen{position:fixed;inset:0;background:var(--red);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem}
+.lock-screen.hidden{display:none}
+.lock-box{background:#fff;border-radius:16px;padding:2.5rem 2rem;text-align:center;width:100%;max-width:360px}
+.lock-logo{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:.5rem}
+.lock-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.lock-sub{font-size:.82rem;color:var(--ink2);margin-bottom:1.5rem}
+.lock-dots{display:flex;justify-content:center;gap:.6rem;margin-bottom:1.5rem}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s}
+.dot.filled{background:var(--red);border-color:var(--red)}
+.dot.error{background:#dc2626;border-color:#dc2626}
+.lock-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.lock-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.85rem;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--ink);cursor:pointer;transition:all .15s}
+.lock-btn:hover{background:#fff5f5;border-color:var(--red);color:var(--red)}
+.lock-btn:active{transform:scale(.95)}
+.lock-btn.del{font-size:.85rem;color:var(--ink3)}
+.lock-error{font-size:.78rem;color:#dc2626;margin-top:.75rem;min-height:1.2em;font-weight:500}
 .app{max-width:1120px;margin:0 auto;padding:0 0 5rem}
 .hdr{background:var(--red);padding:2.5rem 2rem 2rem;text-align:center;margin-bottom:1.75rem}
 .surtitre{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.6);display:block;margin-bottom:.6rem}
@@ -121,6 +137,35 @@ input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--
 </style>
 </head>
 <body>
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-logo">Simulateur officieux</div>
+  <div class="lock-box">
+    <div class="lock-title">Accès privé</div>
+    <div class="lock-sub">Entrez le code à 4 chiffres</div>
+    <div class="lock-dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+    <div class="lock-pad">
+      <button class="lock-btn" onclick="lockKey('1')">1</button>
+      <button class="lock-btn" onclick="lockKey('2')">2</button>
+      <button class="lock-btn" onclick="lockKey('3')">3</button>
+      <button class="lock-btn" onclick="lockKey('4')">4</button>
+      <button class="lock-btn" onclick="lockKey('5')">5</button>
+      <button class="lock-btn" onclick="lockKey('6')">6</button>
+      <button class="lock-btn" onclick="lockKey('7')">7</button>
+      <button class="lock-btn" onclick="lockKey('8')">8</button>
+      <button class="lock-btn" onclick="lockKey('9')">9</button>
+      <div></div>
+      <button class="lock-btn" onclick="lockKey('0')">0</button>
+      <button class="lock-btn del" onclick="lockDel()">⌫</button>
+    </div>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
 <div class="app">
   <div class="hdr">
     <span class="surtitre">Simulateur officieux</span>
@@ -604,7 +649,32 @@ document.querySelectorAll('input[name=fam],input[name=emp],input[name=zone],inpu
 document.querySelectorAll('input[name=log]').forEach(r=>r.addEventListener('change',()=>{updLog();render();}));
 document.querySelectorAll('#spec .co').forEach(l=>l.querySelector('input').addEventListener('change',function(){l.classList.toggle('ck',this.checked);render();}));
 
-loadP('sophie');
+
+/* ── CODE D'ACCÈS ── */
+const CODE_SECRET='1952';
+let lockInput='';
+function lockKey(k){
+  if(lockInput.length>=4)return;
+  lockInput+=k;
+  for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d){d.classList.toggle('filled',i<lockInput.length);d.classList.remove('error');}}
+  if(lockInput.length===4){
+    if(lockInput===CODE_SECRET){
+      document.getElementById('lock-screen').classList.add('hidden');
+      loadP('sophie');
+    } else {
+      for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d)d.classList.add('error');}
+      document.getElementById('lock-error').textContent='Code incorrect — réessayez';
+      setTimeout(()=>{lockInput='';for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d){d.classList.remove('filled','error');}}document.getElementById('lock-error').textContent='';},900);
+    }
+  }
+}
+function lockDel(){
+  if(!lockInput.length)return;
+  lockInput=lockInput.slice(0,-1);
+  for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d)d.classList.toggle('filled',i<lockInput.length);}
+  document.getElementById('lock-error').textContent='';
+}
+// loadP appelé après saisie du code
 </script>
 </body>
 </html>
