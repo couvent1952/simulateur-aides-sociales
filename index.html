@@ -608,23 +608,312 @@ function empLabel(e){return{salarie:'Salarié(e)',chomage:'Sans emploi',independ
 function esc2(s){return(s||'').replace(/'/g,"\\'");}
 
 /* ── COURRIER ── */
-let courrierCache={};
-async function ouvrirCourrier(id,nom,org){
+function ouvrirCourrier(id,nom,org){
+  const P=snap();
   document.getElementById('modal-title').textContent='Courrier — '+nom;
   document.getElementById('modal-sub').textContent='Lettre à adresser à : '+org;
-  document.getElementById('letter-container').innerHTML='<div class="letter-loading"><span class="spin">⏳</span><br><br>Génération en cours…<br><small style="color:var(--ink3)">Connexion internet requise</small></div>';
   document.getElementById('copy-btn').style.display='none';document.getElementById('print-btn').style.display='none';
   document.getElementById('modal').classList.add('open');
-  if(courrierCache[id]){afficherCourrier(courrierCache[id]);return;}
-  const P=snap();
-  const zL={1:'Zone 1 (Île-de-France)',2:'Zone 2 (grandes agglomérations)',3:'Zone 3 (reste du territoire)'}[P.zone]||'';
-  const pt=`- Prénom : ${P.prenom||'[À compléter]'}\n- Âge : ${P.age} ans\n- Situation : ${P.fam}${P.enfants>0?', '+P.enfants+' enfant(s)'+(P.agesEnf&&P.agesEnf.length?' (âges : '+P.agesEnf.join(', ')+')':', âges non précisés'):''}\n- Emploi : ${empLabel(P.emp)}\n- Revenus : ${P.rev} €/mois\n- Logement : ${P.log}${P.log==='locataire'?' — '+zL+' — loyer '+P.loyer+' €/mois':''}`;
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Tu es expert en droit social français. Rédige une lettre de demande formelle.\n\nAIDE : ${nom}\nORGANISME : ${org}\nPROFIL :\n${pt}\n\nCONSIGNES : En-tête [NOM PRÉNOM][ADRESSE][TÉLÉPHONE][EMAIL][DATE] · Objet précis · Corps : situation + éligibilité + références légales · Pièces justificatives à joindre · Formule de politesse · 280–350 mots · Ton formel`}]})});
-    const d=await r.json();
-    const txt=d.content&&d.content[0]&&d.content[0].text?d.content[0].text:'Erreur de génération.';
-    courrierCache[id]=txt;afficherCourrier(txt);
-  }catch(e){afficherCourrier('Erreur réseau. Vérifiez votre connexion internet.');}
+  const txt=genModele(id,P,nom,org);
+  afficherCourrier(txt);
+}
+
+function genModele(id,P,nom,org){
+  const prenom=P.prenom||'[PRÉNOM NOM]';
+  const date=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  const zL={1:'Zone 1 — Île-de-France',2:'Zone 2 — grande agglomération',3:'Zone 3 — reste du territoire'}[P.zone]||'';
+  const famL={seul:'personne seule',couple:'en couple',parent_solo:'parent isolé(e)',famille:'famille'}[P.fam]||P.fam;
+  const empL2={salarie:'salarié(e)',chomage:'demandeur/demandeuse d\'emploi',independant:'travailleur/travailleuse indépendant(e)',retraite:'retraité(e)',etudiant:'étudiant(e)'}[P.emp]||P.emp;
+
+  const entete=`${prenom}
+[ADRESSE COMPLÈTE]
+[CODE POSTAL — VILLE]
+[TÉLÉPHONE]
+[EMAIL]
+
+${org}
+[ADRESSE DE L'ORGANISME]
+
+${date}
+
+`;
+
+  const conge=`\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\n${prenom}`;
+
+  const modeles={
+    rsa:`${entete}Objet : Demande d'attribution du Revenu de Solidarité Active (RSA)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution du Revenu de Solidarité Active (RSA), conformément aux dispositions de l'article L262-1 et suivants du Code de l'action sociale et des familles.
+
+Je suis actuellement ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €. Cette situation me place en dessous du seuil d'éligibilité au RSA, fixé à 1 100 € mensuels pour mon foyer.
+
+Je remplis l'ensemble des conditions prévues par la réglementation en vigueur : résidence stable et régulière en France, absence de ressources suffisantes, et engagement à participer aux actions d'insertion définies conjointement avec votre organisme.
+
+Je joins à la présente les pièces justificatives nécessaires à l'instruction de mon dossier.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Attestation de situation Pôle Emploi / France Travail${P.enfants>0?'\n— Acte(s) de naissance de l\'enfant / des enfants à charge':''}
+— Tout document attestant de la composition du foyer
+${conge}`,
+
+    prime_activite:`${entete}Objet : Demande d'attribution de la Prime d'activité
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de la Prime d'activité, dispositif instauré par la loi du 17 août 2015, destiné à soutenir le pouvoir d'achat des travailleurs à revenus modestes.
+
+Je suis actuellement ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes revenus nets mensuels s'élèvent à ${P.rev} €. Cette situation me permet de prétendre à la Prime d'activité, dont le montant forfaitaire 2025 est fixé à 633,21 €.
+
+Je remplis les conditions d'éligibilité : exercice d'une activité professionnelle salariée, résidence en France, et ressources inférieures au plafond prévu.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Bulletins de salaire des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)${P.enfants>0?'\n— Justificatifs relatifs aux enfants à charge':''}
+${conge}`,
+
+    apl:`${entete}Objet : Demande d'Aide Personnalisée au Logement (APL)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Aide Personnalisée au Logement (APL), conformément aux articles L351-1 et suivants du Code de la construction et de l'habitation.
+
+Je suis locataire d'un logement situé en ${zL}, pour un loyer mensuel de ${P.loyer} € hors charges. Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €.
+
+Ces éléments me placent dans les conditions d'éligibilité à l'APL, dont le montant est calculé selon la formule officielle CAF (barèmes 2025, arrêté du 30 décembre 2024) en fonction de mon loyer plafonné, du forfait charges et de ma participation personnelle.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Contrat de bail en cours
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)
+— Attestation du bailleur (numéro de convention si logement HLM)
+${conge}`,
+
+    asf:`${entete}Objet : Demande d'Allocation de Soutien Familial (ASF)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Soutien Familial (ASF), conformément aux articles L523-1 et suivants du Code de la sécurité sociale.
+
+J'élève seul(e) ${P.enfants} enfant(s) à charge, en l'absence de contribution de l'autre parent. Cette situation m'ouvre droit à l'ASF, dont le montant est fixé à 199,19 € par enfant et par mois pour l'année 2025, sans condition de ressources.
+
+Je certifie que l'autre parent ne contribue pas à l'entretien de l'enfant / des enfants, et que je n'ai pas engagé de procédure de pension alimentaire aboutissant à un versement régulier.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte(s) de naissance de l'enfant / des enfants
+— Jugement de divorce ou séparation (si existant)
+— Attestation sur l'honneur de non-versement de pension alimentaire
+${conge}`,
+
+    af:`${entete}Objet : Demande d'Allocations Familiales
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution des Allocations Familiales, conformément aux articles L521-1 et suivants du Code de la sécurité sociale.
+
+J'ai ${P.enfants} enfant(s) à charge de moins de 20 ans. Ces allocations sont versées dès le deuxième enfant, sans condition de ressources, avec une modulation selon le niveau de revenus depuis 2015. Mes revenus annuels s'élèvent à environ ${P.rev*12} €.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte(s) de naissance de chaque enfant à charge
+— Justificatifs de ressources (avis d'imposition N-1)
+${conge}`,
+
+    paje:`${entete}Objet : Demande de Prestation d'Accueil du Jeune Enfant — Allocation de base (PAJE)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'allocation de base de la Prestation d'Accueil du Jeune Enfant (PAJE), conformément aux articles L531-1 et suivants du Code de la sécurité sociale.
+
+J'ai un enfant de moins de 3 ans à charge. Je suis ${empL2}, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €, ce qui me place sous le plafond de ressources applicable pour l'année 2025.
+
+Le montant de l'allocation de base s'élève à 185 € par mois.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte de naissance de l'enfant
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    ars:`${entete}Objet : Demande d'Allocation de Rentrée Scolaire (ARS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Rentrée Scolaire (ARS), conformément aux articles L543-1 et suivants du Code de la sécurité sociale.
+
+J'ai ${P.enfants} enfant(s) scolarisé(s) âgé(s) de 6 à 18 ans. Je suis ${empL2}, ${famL}, et mes ressources annuelles s'élèvent à environ ${P.rev*12} €, inférieures au plafond prévu. L'ARS est versée chaque année en août.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Certificat(s) de scolarité pour l'année en cours
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    ass:`${entete}Objet : Demande d'Allocation de Solidarité Spécifique (ASS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Solidarité Spécifique (ASS), conformément aux articles L5423-1 et suivants du Code du travail.
+
+Mes droits à l'Allocation de Retour à l'Emploi (ARE) sont désormais épuisés. Je suis à la recherche active d'un emploi et justifie de plus de 5 années d'activité salariée au cours des 10 dernières années. Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €.
+
+L'ASS s'élève à 17,59 € par jour, soit environ 527 € par mois pour 30 jours.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Attestation d'épuisement des droits ARE (France Travail)
+— Justificatifs d'activité salariée sur les 10 dernières années (bulletins de salaire, attestations employeur)
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    css:`${entete}Objet : Demande de Complémentaire Santé Solidaire (CSS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de la Complémentaire Santé Solidaire (CSS), anciennement CMU complémentaire, conformément aux articles L861-1 et suivants du Code de la sécurité sociale.
+
+Je ne bénéficie d'aucune complémentaire santé à ce jour. Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €, inférieures au plafond CSS 2025 (environ 1 300 €/mois pour une personne seule).
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Avis d'imposition ou de non-imposition (N-1)
+— Justificatifs de ressources des 3 derniers mois
+— Attestation de droits à l'Assurance Maladie
+${conge}`,
+
+    aah:`${entete}Objet : Demande d'Allocation aux Adultes Handicapés (AAH)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation aux Adultes Handicapés (AAH), conformément aux articles L821-1 et suivants du Code de la sécurité sociale.
+
+Je suis reconnu(e) en situation de handicap avec un taux d'incapacité permanente d'au moins 80 %, constaté par la Maison Départementale des Personnes Handicapées (MDPH). Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €, inférieures au plafond d'éligibilité.
+
+Le montant maximum de l'AAH pour 2025 est fixé à 971,37 €/mois.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Notification de décision MDPH (taux d'incapacité)
+— Avis d'imposition ou de non-imposition (N-1)
+— Justificatifs de ressources des 3 derniers mois
+${conge}`,
+
+    aspa:`${entete}Objet : Demande d'Allocation de Solidarité aux Personnes Âgées (ASPA — Minimum Vieillesse)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Solidarité aux Personnes Âgées (ASPA), conformément aux articles L815-1 et suivants du Code de la sécurité sociale.
+
+Je suis retraité(e), âgé(e) de ${P.age} ans, et mes revenus mensuels s'élèvent à ${P.rev} €, inférieurs au plafond de l'ASPA fixé à 1 012 €/mois pour une personne seule en 2025. L'ASPA viendrait compléter ma pension à hauteur de ${Math.max(0,1012-P.rev)} €/mois.
+
+Je prends note que l'ASPA est récupérable sur succession pour les montants versés au-delà d'un actif net de 39 000 €.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Notification de pension de retraite
+— Dernier avis d'imposition
+— RIB et coordonnées de la caisse de retraite
+${conge}`,
+
+    arce:`${entete}Objet : Demande d'Aide à la Reprise ou à la Création d'Entreprise (ARCE) et d'Exonération de Charges (ACRE)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter le bénéfice de l'Aide à la Reprise ou à la Création d'Entreprise (ARCE) et de l'Aide aux Créateurs et Repreneurs d'Entreprise (ACRE), dans le cadre de mon projet de création/reprise d'activité.
+
+Je suis actuellement demandeur/demandeuse d'emploi indemnisé(e) par l'ARE. Je souhaite créer ou reprendre une entreprise et bénéficier, à ce titre, du versement en capital de 60 % de mes droits ARE restants (ARCE), ainsi que de l'exonération partielle de charges sociales pendant la première année d'activité (ACRE).
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Attestation de droits ARE en cours (France Travail)
+— Justificatif d'immatriculation de l'entreprise (Kbis, extrait SIRENE)
+— Business plan ou note de présentation du projet
+— Formulaire de demande ARCE (disponible sur francetravail.fr)
+— Formulaire ACRE (disponible sur urssaf.fr)
+${conge}`,
+
+    ajpa:`${entete}Objet : Demande d'Allocation Journalière du Proche Aidant (AJPA)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation Journalière du Proche Aidant (AJPA), conformément aux articles L168-8 et suivants du Code de la sécurité sociale.
+
+Je suis proche aidant d'une personne dépendante ou handicapée nécessitant mon assistance régulière. Je souhaite bénéficier du congé de proche aidant et de l'indemnisation journalière correspondante, fixée à 64 € par jour pour 2025, dans la limite de 66 jours sur l'ensemble de ma vie professionnelle.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatif du lien avec la personne aidée
+— Attestation du médecin ou notification MDPH concernant la personne aidée
+— Accord de l'employeur pour le congé de proche aidant (si salarié)
+${conge}`,
+
+    visale:`${entete}Objet : Demande de Garantie Visale (Caution locative)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter la garantie Visale, dispositif de cautionnement gratuit proposé par Action Logement, conformément à la convention entre l'État et Action Logement.
+
+Je suis ${empL2}, âgé(e) de ${P.age} ans, et souhaite bénéficier de la garantie Visale pour mon projet de location. Cette garantie couvre les loyers impayés et les dégradations locatives, sans frais pour le locataire.
+
+Je remplis les conditions d'éligibilité : ${P.age<30?'moins de 30 ans':'salarié(e) entrant dans l\'emploi'}.
+
+Démarche : La demande Visale s'effectue exclusivement en ligne sur visale.fr — ce courrier peut accompagner votre dossier bailleur.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Visa Visale obtenu sur visale.fr
+— Contrat de travail ou promesse d'embauche
+— Justificatifs de revenus
+${conge}`,
+  };
+
+  return modeles[id]||`${entete}Objet : Demande — ${nom}
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter le bénéfice de l'aide suivante : ${nom}.
+
+Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €.${P.log==='locataire'?' Je suis locataire en '+zL+', pour un loyer de '+P.loyer+' €/mois.':''}
+
+Je vous serais reconnaissant(e) de bien vouloir étudier ma demande et de m'informer des pièces complémentaires éventuellement nécessaires.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`;
 }
 function afficherCourrier(txt){
   document.getElementById('letter-container').innerHTML=`<div class="letter-box" id="ltxt">${txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
