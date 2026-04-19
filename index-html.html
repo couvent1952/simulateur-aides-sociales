@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vous y avez droit — Simulateur officieux</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#c0392b;--green:#16a34a;--amber:#d97706;--blue:#2563eb;--violet:#7c3aed;--border:#e4e4e7;--bg:#f4f3ef;--sur:#fff;--ink:#18181b;--ink2:#52525b;--ink3:#a1a1aa;--r:12px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.lock-screen{position:fixed;inset:0;background:var(--red);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem}
+.lock-screen.hidden{display:none}
+.lock-box{background:#fff;border-radius:16px;padding:2.5rem 2rem;text-align:center;width:100%;max-width:360px}
+.lock-logo{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:.5rem}
+.lock-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.lock-sub{font-size:.82rem;color:var(--ink2);margin-bottom:1.5rem}
+.lock-dots{display:flex;justify-content:center;gap:.6rem;margin-bottom:1.5rem}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s}
+.dot.filled{background:var(--red);border-color:var(--red)}
+.dot.error{background:#dc2626;border-color:#dc2626}
+.lock-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.lock-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.85rem;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--ink);cursor:pointer;transition:all .15s}
+.lock-btn:hover{background:#fff5f5;border-color:var(--red);color:var(--red)}
+.lock-btn:active{transform:scale(.95)}
+.lock-btn.del{font-size:.85rem;color:var(--ink3)}
+.lock-error{font-size:.78rem;color:#dc2626;margin-top:.75rem;min-height:1.2em;font-weight:500}
+.app{max-width:1120px;margin:0 auto;padding:0 0 5rem}
+.hdr{background:var(--red);padding:2.5rem 2rem 2rem;text-align:center;margin-bottom:1.75rem}
+.surtitre{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.6);display:block;margin-bottom:.6rem}
+.hdr h1{font-family:'Syne',sans-serif;font-size:2.3rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.hdr p{font-size:.84rem;color:rgba(255,255,255,.68);max-width:480px;margin:0 auto;line-height:1.6}
+.inner{padding:0 1.5rem}
+
+/* Profils bar */
+.pbar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.4rem;align-items:center}
+.pbar-label{font-size:.72rem;color:var(--ink3);margin-right:.2rem}
+.pb{font-family:'Syne',sans-serif;font-size:.7rem;font-weight:700;padding:.32rem .85rem;border-radius:99px;border:1.5px solid var(--border);background:var(--sur);color:var(--ink2);cursor:pointer;transition:all .2s}
+.pb:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
+.pb.active{border-color:var(--red);color:#fff;background:var(--red)}
+.pb.perso{border-color:var(--blue);color:var(--blue)}
+.pb.perso.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:1.2rem;align-items:start}
+
+/* Form */
+.card{background:var(--sur);border:1px solid var(--border);border-radius:var(--r);padding:1.35rem;margin-bottom:.85rem}
+.stitle{font-family:'Syne',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:.9rem}
+.flabel{font-size:.83rem;font-weight:500;margin-bottom:.32rem;display:block}
+.fhint{font-size:.71rem;color:var(--ink3);margin-bottom:.38rem}
+.fg{margin-bottom:1.15rem}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:.32rem}
+.ro{position:relative}
+.ro input{position:absolute;opacity:0;width:0;height:0}
+.ro label{display:flex;flex-direction:column;align-items:center;gap:4px;padding:.5rem .3rem;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;font-size:.73rem;color:var(--ink2);transition:all .2s;background:var(--bg)}
+.ro input:checked+label{border-color:var(--red);background:#fff5f5;color:var(--red);font-weight:500}
+.ico{font-size:1.1rem}
+.sr{display:flex;align-items:center;gap:9px;padding:.2rem 0}
+.sr input[type=range]{flex:1;accent-color:var(--red)}
+.sv{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700;color:var(--red);min-width:112px;text-align:right}
+.clist{display:flex;flex-direction:column;gap:.28rem}
+.co{display:flex;align-items:center;gap:.55rem;padding:.38rem .6rem;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;font-size:.8rem;transition:all .2s}
+.co:hover{border-color:var(--red);background:#fff5f5}
+.co input{accent-color:var(--red);width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.co.ck{border-color:var(--red);background:#fff5f5;color:var(--red)}
+input[type=text],input[type=number]{width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink)}
+input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--red)}
+
+/* Fiche */
+.fiche-hdr{background:var(--red);border-radius:var(--r);padding:1.05rem 1.3rem;display:flex;align-items:center;gap:11px;margin-bottom:.9rem}
+.fav{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif}
+.fnom{font-size:14px;font-weight:500;color:#fff}
+.fsub{font-size:11px;color:rgba(255,255,255,.62);margin-top:1px}
+.ftot{text-align:right;margin-left:auto}
+.ftotlbl{font-size:10px;color:rgba(255,255,255,.58);text-transform:uppercase;letter-spacing:.08em}
+.ftotval{font-family:'Syne',sans-serif;font-size:1.45rem;font-weight:800;color:#fff}
+
+.ftags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.85rem}
+.ftag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--sur);color:var(--ink2);border:0.5px solid var(--border)}
+
+/* Légende */
+.legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* Blocs aide */
+.aide-block{background:var(--sur);border:0.5px solid var(--border);border-radius:var(--r);padding:.9rem 1.1rem;margin-bottom:.6rem;border-left:3px solid var(--border)}
+.aide-block.cl{border-left-color:var(--blue)}.aide-block.cf{border-left-color:var(--green)}
+.aide-block.clog{border-left-color:var(--violet)}.aide-block.ce{border-left-color:var(--amber)}
+.aide-block.cs{border-left-color:var(--red)}.aide-block.cnok{border-left-color:#d1d5db;opacity:.52}
+.ah{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-bottom:.55rem}
+.anom{font-size:12.5px;font-weight:500;color:var(--ink)}
+.amt{font-size:12.5px;font-weight:500;color:var(--green);white-space:nowrap;flex-shrink:0}
+.amt.nok{color:var(--ink3)}
+.ctable{width:100%;font-size:11px;border-collapse:collapse}
+.ctable tr{border-bottom:0.5px solid var(--border)}
+.ctable tr:last-child{border-bottom:none}
+.ctable td{padding:2.5px 0;color:var(--ink2)}
+.ctable td:last-child{text-align:right;color:var(--ink);font-weight:500}
+.ctable tr.tot td{font-weight:500;padding-top:5px}
+.ctable tr.tot td:last-child{color:var(--green)}
+.ctable tr.tot.nok td:last-child{color:var(--ink3)}
+.nok-reason{font-size:10.5px;color:#92400e;background:#fef3c7;border-radius:6px;padding:4px 8px;margin-top:.4rem;line-height:1.5}
+.brule{font-size:10px;color:var(--ink3);margin-top:.4rem;font-style:italic;line-height:1.5}
+.org{display:inline-block;font-size:10px;padding:2px 6px;border-radius:99px;background:var(--bg);color:var(--ink3);border:0.5px solid var(--border);margin-top:.35rem}
+.btncourrier{background:var(--violet);color:#fff;font-size:.72rem;padding:.35rem .8rem;border-radius:6px;cursor:pointer;border:none;font-weight:500}
+.btncourrier:hover{background:#6d28d9}
+
+/* Total */
+.ftotal-bar{background:var(--bg);border-radius:var(--r);padding:.85rem 1.1rem;display:flex;justify-content:space-between;align-items:center;margin-top:.65rem;border:1px solid var(--border)}
+.ftleft{font-size:12px;color:var(--ink2)}
+.ftright{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:var(--green)}
+.disc{font-size:10.5px;color:var(--ink3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:var(--sur);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;padding:1.75rem;position:relative}
+.modal-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:.2rem}
+.modal-sub{font-size:.8rem;color:var(--ink2);margin-bottom:1.1rem}
+.modal-close{position:absolute;top:.9rem;right:.9rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--ink2)}
+.letter-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:1.1rem;font-size:.83rem;line-height:1.8;color:var(--ink);white-space:pre-wrap;min-height:180px}
+.letter-loading{text-align:center;padding:2rem;color:var(--ink2)}
+.spin{font-size:1.4rem;display:inline-block;animation:spin 1s linear infinite}
+.btnrow{display:flex;gap:.5rem;margin-top:.65rem;flex-wrap:wrap}
+.btn-g{background:var(--violet);color:#fff;font-size:.75rem;font-weight:500;padding:.4rem .9rem;border-radius:7px;cursor:pointer;border:none}
+.btn-s{background:transparent;color:var(--ink2);border:1.5px solid var(--border);font-size:.75rem;font-weight:500;padding:.4rem .9rem;border-radius:7px;cursor:pointer}
+
+.empty-fiche{text-align:center;padding:2.5rem;color:var(--ink3);font-size:.84rem;border:1px dashed var(--border);border-radius:var(--r)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.aide-block{animation:fadeUp .2s ease both}
+@media(max-width:740px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-logo">Simulateur officieux</div>
+  <div class="lock-box">
+    <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:.4rem">Simulateur officieux</div>
+    <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;line-height:1.1;margin-bottom:.5rem">Vous y avez droit</div>
+    <div class="lock-title">Accès privé</div>
+    <div class="lock-sub">Entrez le code à 4 chiffres</div>
+    <div class="lock-dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+    <div class="lock-pad">
+      <button class="lock-btn" onclick="lockKey('1')">1</button>
+      <button class="lock-btn" onclick="lockKey('2')">2</button>
+      <button class="lock-btn" onclick="lockKey('3')">3</button>
+      <button class="lock-btn" onclick="lockKey('4')">4</button>
+      <button class="lock-btn" onclick="lockKey('5')">5</button>
+      <button class="lock-btn" onclick="lockKey('6')">6</button>
+      <button class="lock-btn" onclick="lockKey('7')">7</button>
+      <button class="lock-btn" onclick="lockKey('8')">8</button>
+      <button class="lock-btn" onclick="lockKey('9')">9</button>
+      <div></div>
+      <button class="lock-btn" onclick="lockKey('0')">0</button>
+      <button class="lock-btn del" onclick="lockDel()">⌫</button>
+    </div>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="hdr">
+    <span class="surtitre">Simulateur officieux</span>
+    <h1>Vous y avez droit</h1>
+    <p>Renseignez votre profil — la fiche de calcul se met à jour instantanément, aide par aide</p>
+  </div>
+  <div class="inner">
+    <div class="pbar">
+      <span class="pbar-label">Profils :</span>
+      <button class="pb perso" onclick="loadP('perso')">⭐ Votre profil</button>
+      <button class="pb" onclick="loadP('sophie')">Sophie, 28 ans</button>
+      <button class="pb" onclick="loadP('mohamed')">Mohamed, 52 ans</button>
+      <button class="pb" onclick="loadP('claire')">Claire, 22 ans</button>
+      <button class="pb" onclick="loadP('jacques')">Jacques, 68 ans</button>
+      <button class="pb" onclick="loadP('amira')">Amira, 35 ans</button>
+    </div>
+    <div class="layout">
+      <!-- FORMULAIRE -->
+      <div>
+        <div class="card" id="perso-card" style="display:none;border:2px solid var(--blue)">
+          <div class="stitle" style="color:var(--blue)">⭐ Votre profil personnel</div>
+          <div class="fg"><label class="flabel">Votre prénom (optionnel)</label><input type="text" id="prenom" placeholder="ex. Marie" oninput="render()"></div>
+        </div>
+
+        <div class="card">
+          <div class="stitle">Identité</div>
+          <div class="fg"><label class="flabel">Âge</label><div class="sr"><input type="range" id="age" min="16" max="85" value="34" step="1"><span class="sv" id="age-out">34 ans</span></div></div>
+          <div class="fg"><label class="flabel">Situation familiale</label>
+            <div class="rgrid">
+              <div class="ro"><input type="radio" name="fam" id="f1" value="seul"><label for="f1"><span class="ico">🧍</span>Seul(e)</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f2" value="couple"><label for="f2"><span class="ico">👫</span>Couple marié/PACS</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f2b" value="concubin"><label for="f2b"><span class="ico">🤝</span>Concubin(s)</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f3" value="parent_solo" checked><label for="f3"><span class="ico">👩‍👦</span>Parent solo</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f4" value="famille"><label for="f4"><span class="ico">👨‍👩‍👧</span>Famille</label></div>
+            </div>
+          </div>
+          <div class="fg"><label class="flabel">Nombre d'enfants à charge</label><div class="sr"><input type="range" id="enf" min="0" max="8" value="1" step="1"><span class="sv" id="enf-out">1 enfant</span></div></div>
+          <div class="fg" id="ages-enf-grp"><label class="flabel">Âge du/des enfant(s)</label>
+            <div class="fhint">Indiquez les âges séparés par des virgules (ex: 2, 5, 14)</div>
+            <input type="text" id="ages-enf" placeholder="ex: 2, 5, 14" oninput="render()">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stitle">Revenus & emploi</div>
+          <div class="fg"><label class="flabel">Revenus nets mensuels du foyer</label><div class="sr"><input type="range" id="rev" min="0" max="5000" value="900" step="50"><span class="sv" id="rev-out">900 €/mois</span></div></div>
+          <div class="fg"><label class="flabel">Statut professionnel</label>
+            <div class="rgrid">
+              <div class="ro"><input type="radio" name="emp" id="e1" value="salarie"><label for="e1"><span class="ico">💼</span>Salarié(e)</label></div>
+              <div class="ro"><input type="radio" name="emp" id="e2" value="chomage" checked><label for="e2"><span class="ico">📋</span>Sans emploi</label></div>
+              <div class="ro"><input type="radio" name="emp" id="e3" value="independant"><label for="e3"><span class="ico">🔧</span>Indép./TNS</label></div>
+              <div class="ro"><input type="radio" name="emp" id="e4" value="retraite"><label for="e4"><span class="ico">🏖️</span>Retraité(e)</label></div>
+              <div class="ro"><input type="radio" name="emp" id="e5" value="etudiant"><label for="e5"><span class="ico">🎓</span>Étudiant(e)</label></div>
+            </div>
+          </div>
+          <div class="fg"><label class="flabel">Droits ARE (assurance chômage)</label>
+            <div class="rgrid">
+              <div class="ro"><input type="radio" name="are" id="are1" value="oui"><label for="are1">Ouverts</label></div>
+              <div class="ro"><input type="radio" name="are" id="are2" value="non" checked><label for="are2">Non</label></div>
+              <div class="ro"><input type="radio" name="are" id="are3" value="epuise"><label for="are3">Épuisés</label></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stitle">Logement</div>
+          <div class="fg"><label class="flabel">Statut d'occupation</label>
+            <div class="rgrid">
+              <div class="ro"><input type="radio" name="log" id="l1" value="locataire" checked><label for="l1"><span class="ico">🏠</span>Locataire</label></div>
+              <div class="ro"><input type="radio" name="log" id="l2" value="proprietaire"><label for="l2"><span class="ico">🏡</span>Propriétaire</label></div>
+              <div class="ro"><input type="radio" name="log" id="l3" value="heberge"><label for="l3"><span class="ico">🏢</span>Hébergé(e)</label></div>
+              <div class="ro"><input type="radio" name="log" id="l4" value="sans_domicile"><label for="l4"><span class="ico">⚠️</span>Sans domicile</label></div>
+            </div>
+          </div>
+          <div id="loyer-grp" class="fg">
+            <label class="flabel">Loyer mensuel hors charges</label>
+            <div class="sr"><input type="range" id="loyer" min="0" max="2000" value="600" step="25"><span class="sv" id="loyer-out">600 €/mois</span></div>
+          </div>
+          <div id="zone-grp" class="fg">
+            <label class="flabel">Zone géographique APL</label>
+            <div class="fhint">Zone 1 = Île-de-France · Zone 2 = Agglomérations +100k hab. · Zone 3 = Reste du territoire</div>
+            <div class="rgrid">
+              <div class="ro"><input type="radio" name="zone" id="z1" value="1"><label for="z1">Zone 1<br><span style="font-size:.63rem;color:var(--ink3)">Île-de-France</span></label></div>
+              <div class="ro"><input type="radio" name="zone" id="z2" value="2"><label for="z2">Zone 2<br><span style="font-size:.63rem;color:var(--ink3)">Grandes villes</span></label></div>
+              <div class="ro"><input type="radio" name="zone" id="z3" value="3" checked><label for="z3">Zone 3<br><span style="font-size:.63rem;color:var(--ink3)">Reste</span></label></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stitle">Situations particulières</div>
+          <div class="clist" id="spec">
+            <label class="co"><input type="checkbox" value="handicap"> Handicap reconnu MDPH (taux ≥ 80 %)</label>
+            <label class="co"><input type="checkbox" value="ald"> Affection longue durée (ALD)</label>
+            <label class="co"><input type="checkbox" value="pas_css"> Pas de complémentaire santé</label>
+            <label class="co"><input type="checkbox" value="proche_aidant"> Proche aidant</label>
+            <label class="co"><input type="checkbox" value="creation_entr"> Projet création/reprise d'entreprise</label>
+            <label class="co"><input type="checkbox" value="victime_violence"> Victime de violences conjugales</label>
+            <label class="co"><input type="checkbox" value="refugie"> Statut réfugié / protection subsidiaire</label>
+          </div>
+        </div>
+
+        <div style="margin-top:.4rem;font-size:.73rem;color:var(--ink3);line-height:1.7;text-align:center">
+          Simulation indicative · Barèmes 2025 · Sans valeur juridique<br>
+          <a href="https://wwwd.caf.fr/wps/portal/caffr/simulateursdroits" target="_blank" style="color:var(--red)">Simulateur officiel CAF →</a>
+        </div>
+      </div>
+
+      <!-- FICHE -->
+      <div id="fiche-container"><div class="empty-fiche">La fiche de calcul s'affiche ici automatiquement dès que vous renseignez un profil</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal courrier -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div id="letter-container"><div class="letter-loading"><span class="spin">⏳</span><br><br>Génération en cours…</div></div>
+    <div class="btnrow">
+      <button class="btn-g" id="copy-btn" style="display:none" onclick="copyCourrier()">📋 Copier</button>
+      <button class="btn-s" id="print-btn" style="display:none" onclick="imprimerCourrier()">🖨️ Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── BARÈMES APL 2025 ── */
+const APL_PL={1:[312.85,274.03,248.60],2:[363.47,319.22,289.36],3:[394.44,346.47,314.25],4:[422.65,371.05,336.60],5:[450.68,395.52,358.94]};
+const APL_FC={1:66.13,2:76.12,3:84.10,4:90.08};
+const APL_R0={1:[5235,5235,5235],2:[8138,8138,8138],3:[9480,9480,9480],4:[10822,10822,10822]};
+function nbP(P){return(P.fam==='couple'||P.fam==='famille'||P.fam==='concubin'?2:1)+P.enfants;}
+function calcAPL(P){
+  if(P.log!=='locataire')return null;
+  const z=parseInt(P.zone)-1,n=Math.min(nbP(P),5);
+  const pl=APL_PL[n][z],lr=Math.min(P.loyer,pl);
+  const fc=APL_FC[Math.min(n,4)]||90.08,DL=lr+fc;
+  let ra=P.rev*12;if(P.emp==='chomage')ra*=0.70;if(P.emp==='etudiant')ra=8600;
+  const R0=(APL_R0[Math.min(n,4)]||APL_R0[4])[z];
+  const PP=39.56+0.0281*Math.max(0,ra-R0);
+  const apl=Math.max(0,Math.round((DL-PP-5)*100)/100);
+  return{apl:apl>10?apl:0,lr:lr.toFixed(2),pl:pl.toFixed(2),fc:fc.toFixed(2),DL:DL.toFixed(2),ra:Math.round(ra),R0,PP:PP.toFixed(2)};
+}
+
+/* ── PROFILS TYPES ── */
+const PROFILS={
+  perso:{age:35,rev:1200,enfants:0,agesEnf:'',loyer:700,fam:'seul',emp:'salarie',log:'locataire',zone:'3',are:'non',handicap:false,ald:false,pas_css:false,proche_aidant:false,creation_entr:false,victime_violence:false,refugie:false,prenom:''},
+  sophie:{age:28,rev:750,enfants:2,agesEnf:'3, 6',loyer:550,fam:'parent_solo',emp:'chomage',log:'locataire',zone:'3',are:'epuise',handicap:false,ald:false,pas_css:false,proche_aidant:false,creation_entr:false,victime_violence:false,refugie:false,prenom:'Sophie'},
+  mohamed:{age:52,rev:1600,enfants:2,agesEnf:'10, 14',loyer:750,fam:'couple',emp:'salarie',log:'locataire',zone:'2',are:'non',handicap:false,ald:false,pas_css:false,proche_aidant:false,creation_entr:false,victime_violence:false,refugie:false,prenom:'Mohamed'},
+  claire:{age:22,rev:400,enfants:0,agesEnf:'',loyer:650,fam:'seul',emp:'etudiant',log:'locataire',zone:'1',are:'non',handicap:false,ald:false,pas_css:true,proche_aidant:false,creation_entr:false,victime_violence:false,refugie:false,prenom:'Claire'},
+  jacques:{age:68,rev:900,enfants:0,agesEnf:'',loyer:0,fam:'seul',emp:'retraite',log:'proprietaire',zone:'3',are:'non',handicap:false,ald:true,pas_css:true,proche_aidant:false,creation_entr:false,victime_violence:false,refugie:false,prenom:'Jacques'},
+  amira:{age:35,rev:1100,enfants:1,agesEnf:'4',loyer:680,fam:'couple',emp:'chomage',log:'locataire',zone:'2',are:'oui',handicap:false,ald:false,pas_css:false,proche_aidant:false,creation_entr:true,victime_violence:false,refugie:false,prenom:'Amira'},
+};
+
+function parseAgesEnf(str){
+  if(!str||!str.trim())return[];
+  return str.split(/[,;\/\s]+/).map(s=>parseInt(s)).filter(n=>!isNaN(n)&&n>=0&&n<=25);
+}
+
+function loadP(id){
+  const p=PROFILS[id];if(!p)return;
+  setSl('age',p.age,v=>v+' ans');
+  setSl('rev',p.rev,v=>v.toLocaleString('fr-FR')+' €/mois');
+  setSl('enf',p.enfants,v=>v===0?'0 enfant':v===1?'1 enfant':v+' enfants');
+  setSl('loyer',p.loyer,v=>v.toLocaleString('fr-FR')+' €/mois');
+  document.getElementById('ages-enf').value=p.agesEnf||'';
+  document.getElementById('prenom').value=p.prenom||'';
+  ['fam','emp','log','zone','are'].forEach(n=>chkR(n,p[n]));
+  ['handicap','ald','pas_css','proche_aidant','creation_entr','victime_violence','refugie'].forEach(k=>{
+    const el=document.querySelector(`#spec input[value="${k}"]`);
+    if(el){el.checked=!!p[k];el.closest('.co').classList.toggle('ck',!!p[k]);}
+  });
+  document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('active',b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'")));
+  document.getElementById('perso-card').style.display=id==='perso'?'block':'none';
+  updLog();render();
+}
+
+function setSl(id,val,fmt){const el=document.getElementById(id);if(el)el.value=val;const out=document.getElementById(id+'-out');if(out)out.textContent=fmt(val);}
+function chkR(name,val){const el=document.querySelector(`input[name=${name}][value="${val}"]`);if(el)el.checked=true;}
+function gChk(val){return!!document.querySelector(`#spec input[value="${val}"]:checked`);}
+
+function snap(){
+  return{
+    age:+document.getElementById('age').value,
+    rev:+document.getElementById('rev').value,
+    enfants:+document.getElementById('enf').value,
+    agesEnf:parseAgesEnf(document.getElementById('ages-enf').value),
+    loyer:+document.getElementById('loyer').value,
+    prenom:(document.getElementById('prenom').value||'').trim(),
+    fam:(document.querySelector('input[name=fam]:checked')||{value:'seul'}).value,
+    emp:(document.querySelector('input[name=emp]:checked')||{value:'chomage'}).value,
+    log:(document.querySelector('input[name=log]:checked')||{value:'locataire'}).value,
+    zone:(document.querySelector('input[name=zone]:checked')||{value:'3'}).value,
+    are:(document.querySelector('input[name=are]:checked')||{value:'non'}).value,
+    handicap:gChk('handicap'),ald:gChk('ald'),pas_css:gChk('pas_css'),
+    proche_aidant:gChk('proche_aidant'),creation_entr:gChk('creation_entr'),
+    victime_violence:gChk('victime_violence'),refugie:gChk('refugie'),
+  };
+}
+
+function updLog(){
+  const v=(document.querySelector('input[name=log]:checked')||{value:'locataire'}).value;
+  const isLoc=v==='locataire';
+  document.getElementById('loyer-grp').style.display=isLoc?'block':'none';
+  document.getElementById('zone-grp').style.display=isLoc?'block':'none';
+}
+
+function updAgesGrp(){
+  const n=+document.getElementById('enf').value;
+  document.getElementById('ages-enf-grp').style.display=n>0?'block':'none';
+}
+
+/* ── CONSTRUCTION DES AIDES ── */
+function buildAides(P,apl){
+  const L=[];
+  const ages=P.agesEnf||[];
+  const hasEnfMoins3=ages.some(a=>a<3)||(P.enfants>0&&ages.length===0);
+  const hasEnfMoins20=P.enfants>0;
+  const hasEnfScolaire=ages.some(a=>a>=6&&a<=18)||(P.enfants>0&&ages.length===0);
+
+  /* RSA */
+  const rsaOk=P.rev<1100&&!['salarie','retraite'].includes(P.emp)&&P.age>=25;
+  const rsaMt=rsaOk?Math.max(0,(P.fam==='parent_solo'?847.61:635.71)+P.enfants*127-P.rev*0.62):0;
+  L.push({id:'rsa',nom:'RSA — Revenu de Solidarité Active',nomC:'RSA',cls:'cl',ok:rsaOk,
+    mt:Math.round(rsaMt)+' €/mois',mn:rsaMt,org:'CAF',
+    regle:'Art. L262-2 CASF · Barème 2025',
+    nok_why:!rsaOk?[P.rev>=1100&&'Revenus > 1 100 €/mois (plafond RSA)',P.emp==='salarie'&&'Vous êtes salarié(e) — le RSA ne se cumule pas avec un emploi stable',P.emp==='retraite'&&'Retraités non éligibles au RSA',P.age<25&&'Moins de 25 ans — RSA jeunes sous conditions'].filter(Boolean):null,
+    li:rsaOk?[{l:'Socle '+(P.fam==='parent_solo'?'parent isolé':'personne seule'),v:(P.fam==='parent_solo'?'847,61':'635,71')+' €'},{l:'Supplément enfants (×127 €)',v:'+ '+(P.enfants*127)+' €'},{l:'Revenus foyer (62 %)',v:'− '+Math.round(P.rev*0.62)+' €'},{l:'RSA versé estimé',v:Math.round(rsaMt)+' €/mois',t:1}]:
+    [{l:'Condition revenus',v:P.rev<1100?'✓':'✗ ('+P.rev+' € > 1 100 €)'},{l:'Condition statut',v:!['salarie','retraite'].includes(P.emp)?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'Condition âge',v:P.age>=25?'✓':'✗ ('+P.age+' ans < 25 ans)'},{l:'Résultat',v:'Non éligible',t:1}]
+  });
+
+  /* Prime d'activité */
+  const paOk=P.emp==='salarie'&&P.rev<2400;
+  const paMt=paOk?Math.max(0,633.21-P.rev*0.38):0;
+  L.push({id:'prime_activite',nom:"Prime d'activité",nomC:"Prime activité",cls:'cl',ok:paOk,
+    mt:Math.round(paMt)+' €/mois',mn:paMt,org:'CAF',
+    regle:'Forfait 633,21 € − 38 % des revenus (estimation simplifiée)',
+    nok_why:!paOk?[P.emp!=='salarie'&&'Réservée aux salariés et indépendants — pas au chômage ou à la retraite',P.rev>=2400&&'Revenus > 2 400 €/mois (plafond prime activité)'].filter(Boolean):null,
+    li:paOk?[{l:'Montant forfaitaire',v:'633,21 €'},{l:'Déduction revenus (38 %)',v:'− '+Math.round(P.rev*0.38)+' €'},{l:'Prime estimée',v:Math.round(paMt)+' €/mois',t:1}]:
+    [{l:'Condition : salarié(e)',v:P.emp==='salarie'?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'Condition revenus (< 2 400 €)',v:P.rev<2400?'✓':'✗ ('+P.rev+' €)'},{l:'Résultat',v:'Non éligible',t:1}]
+  });
+
+  /* APL */
+  const aplOk=apl&&apl.apl>0;
+  L.push({id:'apl',nom:'APL — Aide Personnalisée au Logement',nomC:'APL',cls:'clog',ok:aplOk,
+    mt:aplOk?apl.apl.toFixed(2)+' €/mois':'Non éligible',mn:aplOk?apl.apl:0,org:'CAF',
+    regle:'Formule officielle CAF : DL − PP − 5 € · Arrêté 30/12/2024',
+    nok_why:!aplOk?[P.log!=='locataire'&&'Vous n\'êtes pas locataire — l\'APL ne s\'applique qu\'aux locataires',apl&&apl.apl===0&&P.log==='locataire'&&'Participation personnelle trop élevée par rapport à votre loyer plafonné — APL calculée à 0'].filter(Boolean):null,
+    li:aplOk?[{l:'Loyer retenu (plafonné à '+apl.pl+' €)',v:apl.lr+' €'},{l:'+ Forfait charges',v:'+ '+apl.fc+' €'},{l:'= Dépense logement',v:apl.DL+' €'},{l:'Revenus annuels retenus',v:apl.ra+' €/an'},{l:'R0 Zone '+P.zone,v:apl.R0+' €/an'},{l:'− Participation personnelle',v:'− '+apl.PP+' €'},{l:'APL nette',v:apl.apl.toFixed(2)+' €/mois',t:1}]:
+    [{l:'Statut locataire',v:P.log==='locataire'?'✓':'✗ ('+P.log+')'},{l:'Condition revenus',v:P.rev<3200?'✓':'✗'},{l:'Résultat',v:'Non éligible',t:1}]
+  });
+
+  /* ASF */
+  const asfOk=['parent_solo','seul'].includes(P.fam)&&P.enfants>=1;
+  const asfMt=asfOk?P.enfants*199.19:0;
+  L.push({id:'asf',nom:'ASF — Allocation de Soutien Familial',nomC:'ASF',cls:'cf',ok:asfOk,
+    mt:Math.round(asfMt)+' €/mois',mn:asfMt,org:'CAF',
+    regle:'199,19 €/enfant · Pas de condition de ressources',
+    nok_why:!asfOk?[!['parent_solo','seul'].includes(P.fam)&&'Réservée aux parents élevant seuls leurs enfants (en couple = non éligible)',P.enfants===0&&'Aucun enfant à charge déclaré'].filter(Boolean):null,
+    li:asfOk?[{l:'Montant unitaire 2025',v:'199,19 €/enfant'},{l:'Nombre d\'enfants',v:'× '+P.enfants},{l:'ASF totale',v:Math.round(asfMt)+' €/mois',t:1}]:
+    [{l:'Condition : parent solo ou seul',v:['parent_solo','seul'].includes(P.fam)?'✓':'✗ (en couple)'},{l:'Condition : enfants à charge',v:P.enfants>=1?'✓':'✗ (0 enfant)'},{l:'Résultat',v:'Non éligible',t:1}]
+  });
+
+  /* Allocations familiales */
+  const afOk=P.enfants>=2;
+  L.push({id:'af',nom:'Allocations Familiales',nomC:'AF',cls:'cf',ok:afOk,
+    mt:afOk?(()=>{const ra=P.rev*12;const n=P.enfants;const base=ra<57768?(n===2?176.61:n===3?403.27:403.27+(n-3)*226.66):(ra<77304?(n===2?88.31:n===3?201.64:201.64+(n-3)*113.33):(n===2?44.15:n===3?100.82:100.82+(n-3)*56.66));return Math.round(base)+' €/mois';})():'Non éligible',mn:afOk?(()=>{const ra=P.rev*12;const n=P.enfants;return ra<57768?(n===2?176.61:n===3?403.27:403.27+(n-3)*226.66):(ra<77304?(n===2?88.31:n===3?201.64:201.64+(n-3)*113.33):(n===2?44.15:n===3?100.82:100.82+(n-3)*56.66));})():0,org:'CAF',
+    regle:'Dès le 2e enfant de moins de 20 ans · 3 tranches de revenus depuis 2015 · Barème 2025',
+    nok_why:!afOk?['Les allocations familiales sont versées à partir du 2e enfant à charge — avec 1 seul enfant vous n\'y avez pas droit'].filter(Boolean):null,
+    li:afOk?[{l:'Nombre d\'enfants éligibles',v:P.enfants+' enfants'},{l:'Revenus annuels',v:(P.rev*12).toLocaleString('fr-FR')+' €/an'},{l:'Tranche',v:P.rev*12<57768?'Tranche 1 (taux plein)':P.rev*12<77304?'Tranche 2 (50 %)':'Tranche 3 (25 %)'},{l:'Montant mensuel 2025',v:(P.rev*12<57768?(P.enfants===2?'176,61':P.enfants===3?'403,27':'403,27+'):(P.rev*12<77304?(P.enfants===2?'88,31':P.enfants===3?'201,64':'201,64+'):(P.enfants===2?'44,15':P.enfants===3?'100,82':'100,82+')))+' €',t:1}]:
+    [{l:'Condition : 2 enfants minimum',v:'✗ ('+P.enfants+' enfant'+(P.enfants>1?'s':'')+')'},{l:'Résultat',v:'Non éligible',t:1}]
+  });
+
+  /* PAJE — allocation de base (enfant < 3 ans) */
+  const pajeOk=P.enfants>=1&&P.rev<3200&&hasEnfMoins3;
+  const pajeReason=!pajeOk&&P.enfants>=1&&!hasEnfMoins3&&ages.length>0?'Aucun enfant de moins de 3 ans déclaré — la PAJE allocation de base est réservée aux enfants de 0 à 3 ans':null;
+  L.push({id:'paje',nom:'PAJE — Allocation de base (enfant < 3 ans)',nomC:'PAJE',cls:'cf',ok:pajeOk,
+    mt:pajeOk?'185 €/mois':'Non éligible',mn:pajeOk?185:0,org:'CAF',
+    regle:'Pour les enfants de moins de 3 ans · Sous conditions de ressources',
+    nok_why:!pajeOk?[P.enfants===0&&'Aucun enfant à charge',pajeReason,P.rev>=3200&&'Revenus > 3 200 €/mois (plafond PAJE)'].filter(Boolean):null,
+    li:[{l:'Enfant(s) de moins de 3 ans',v:hasEnfMoins3?'Oui':'Non — aucun enfant < 3 ans'+(ages.length>0?' (âges : '+ages.join(', ')+')':', âges non renseignés')},{l:'Condition revenus (< 3 200 €)',v:P.rev<3200?'✓ ('+P.rev+' €)':'✗ ('+P.rev+' €)'},{l:'Résultat',v:pajeOk?'185 €/mois':'Non éligible',t:1}]
+  });
+
+  /* ARS — Allocation de rentrée scolaire */
+  const arsOk=hasEnfScolaire&&P.rev<3200;
+  L.push({id:'ars',nom:'ARS — Allocation de Rentrée Scolaire',nomC:'ARS',cls:'cf',ok:arsOk,ponctuel:true,
+    mt:arsOk?'416 à 454 €/enfant':'Non éligible',mn:arsOk?416*Math.max(1,ages.filter(a=>a>=6&&a<=18).length||1):0,org:'CAF',
+    regle:'Versée en août · Pour enfants 6–18 ans · Sous conditions de ressources',
+    nok_why:!arsOk?[P.enfants===0&&'Aucun enfant à charge',!hasEnfScolaire&&ages.length>0&&'Aucun enfant entre 6 et 18 ans (âges : '+ages.join(', ')+')',P.rev>=3200&&'Revenus > plafond'].filter(Boolean):null,
+    li:[{l:'Enfant(s) scolarisé(s) (6–18 ans)',v:hasEnfScolaire?(ages.length>0?ages.filter(a=>a>=6&&a<=18).length+' enfant(s) éligible(s)':'À vérifier (âges non renseignés)'):'Non (âges : '+(ages.length>0?ages.join(', '):'non renseignés')+')'},{l:'Condition revenus (< 3 200 €)',v:P.rev<3200?'✓':'✗'},{l:'Résultat',v:arsOk?'416–454 €/enfant (août)':'Non éligible',t:1}]
+  });
+
+  /* ASS */
+  const assOk=P.emp==='chomage'&&P.are==='epuise'&&P.age>30;
+  L.push({id:'ass',nom:'ASS — Allocation de Solidarité Spécifique',nomC:'ASS',cls:'ce',ok:assOk,
+    mt:assOk?'527 €/mois':'Non éligible',mn:assOk?527:0,org:'France Travail',
+    regle:"17,59 €/jour · 5 ans d'activité sur les 10 dernières années requis",
+    nok_why:!assOk?[P.emp!=='chomage'&&'Réservée aux demandeurs d\'emploi — vous n\'êtes pas en situation de chômage',P.are==='non'&&'Vous n\'avez pas ouvert de droits ARE — l\'ASS prend le relais en fin de droits',P.are==='oui'&&'Vos droits ARE sont toujours ouverts — l\'ASS prend le relais après épuisement',P.age<=30&&'Condition d\'âge : plus de 30 ans requis'].filter(Boolean):null,
+    li:[{l:'Statut sans emploi',v:P.emp==='chomage'?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'ARE épuisés',v:P.are==='epuise'?'✓':'✗ ('+P.are+')'},{l:'Âge > 30 ans',v:P.age>30?'✓':'✗ ('+P.age+' ans)'},{l:'Résultat',v:assOk?'527 €/mois (30 j.)':'Non éligible',t:1}]
+  });
+
+  /* CSS */
+  if(P.pas_css){
+    const cssOk=P.rev<1300;
+    L.push({id:'css',nom:'CSS — Complémentaire Santé Solidaire',nomC:'CSS',cls:'cs',ok:cssOk,
+      mt:cssOk?'Gratuit / 1 €/mois':'Non éligible',mn:0,org:'CPAM',
+      regle:'Ancienne CMU-C/ACS · Plafond 2025 : ~1 300 €/mois (foyer d\'1 personne)',
+      nok_why:!cssOk?['Revenus > plafond CSS (environ 1 300 €/mois pour une personne seule)']:null,
+      li:[{l:'Revenus (< 1 300 €)',v:P.rev<1300?'✓ ('+P.rev+' €)':'✗ ('+P.rev+' €)'},{l:'Résultat',v:cssOk?'Éligible — demande CPAM':'Non éligible',t:1}]
+    });
+  }
+
+  /* AAH */
+  if(P.handicap){
+    const aahMt=Math.max(0,971-P.rev*0.4);
+    L.push({id:'aah',nom:'AAH — Allocation Adultes Handicapés',nomC:'AAH',cls:'cs',ok:P.rev<2000,
+      mt:P.rev<2000?Math.round(aahMt)+' €/mois':'Non éligible',mn:P.rev<2000?aahMt:0,org:'CAF / MDPH',
+      regle:'Taux MDPH ≥ 80 % · Montant max 971,37 € (2025)',
+      nok_why:P.rev>=2000?['Revenus > 2 000 €/mois (plafond AAH)']:null,
+      li:[{l:'Handicap reconnu MDPH',v:'✓'},{l:'Condition revenus (< 2 000 €)',v:P.rev<2000?'✓':'✗'},{l:'Montant estimé',v:P.rev<2000?Math.round(aahMt)+' €/mois':'Non éligible',t:1}]
+    });
+  }
+
+  /* ARCE + ACRE */
+  if(P.creation_entr){
+    const arceOk=P.are==='oui';
+    L.push({id:'arce',nom:"ARCE + ACRE — Aides à la création d'entreprise",nomC:'ARCE/ACRE',cls:'ce',ok:true,
+      mt:'Exonérations + capital ARE',mn:0,org:'France Travail / URSSAF',
+      regle:"ARCE : 60 % droits ARE en capital · ACRE : exo. charges 1re année d'activité",
+      li:[{l:'ARCE (60 % droits ARE)',v:arceOk?'Éligible':'ARE non ouverts — ARCE non disponible'},{l:'ACRE (exo. charges URSSAF)',v:'Éligible — demande à l\'immatriculation'},{l:'Résultat',v:'Démarches à initier dès la création',t:1}]
+    });
+  }
+
+  /* ASPA */
+  if(P.emp==='retraite'&&P.age>=65){
+    const aspaOk=P.rev<1012;
+    const aspaMt=aspaOk?Math.max(0,1012-P.rev):0;
+    L.push({id:'aspa',nom:'ASPA — Minimum Vieillesse',nomC:'ASPA',cls:'cl',ok:aspaOk,
+      mt:aspaOk?Math.round(aspaMt)+' €/mois':'Non éligible',mn:aspaMt,org:'CARSAT',
+      regle:'Complète la retraite jusqu\'à 1 012 €/mois · Récupérable sur succession si actif > 39 000 €',
+      nok_why:!aspaOk?['Pension > 1 012 €/mois — l\'ASPA complète les retraites insuffisantes jusqu\'à ce plafond']:null,
+      li:[{l:'Plafond ASPA 2025',v:'1 012 €/mois'},{l:'Pension actuelle',v:P.rev+' €/mois'},{l:'Complément versé',v:aspaOk?Math.round(aspaMt)+' €/mois':'—',t:1}]
+    });
+  }
+
+  /* AJPA */
+  if(P.proche_aidant){
+    L.push({id:'ajpa',nom:'AJPA — Allocation Journalière Proche Aidant',nomC:'AJPA',cls:'cs',ok:true,
+      mt:'64 €/jour (max 66 jours)',mn:0,org:'CAF',
+      regle:'Maximum 66 jours sur toute la vie professionnelle · Demande à la CAF',
+      li:[{l:'Proche aidant déclaré',v:'✓'},{l:'Résultat',v:'Éligible — formulaire CAF en ligne',t:1}]
+    });
+  }
+
+  /* Aide violences */
+  if(P.victime_violence){
+    L.push({id:'aide_violence',nom:"Aide d'urgence — Violences conjugales",nomC:'Aide urgence',cls:'cs',ok:true,
+      mt:'Ponctuel — urgence',mn:0,org:'CAF / 3919',
+      regle:"Allocation d'urgence pour mise à l'abri immédiate · Contactez le 3919 (numéro national gratuit)",
+      li:[{l:'Résultat',v:'Contactez la CAF ou le 3919 immédiatement',t:1}]
+    });
+  }
+
+  /* ATA réfugiés */
+  if(P.refugie){
+    L.push({id:'ata',nom:"ATA — Allocation Temporaire d'Attente",nomC:'ATA',cls:'cl',ok:true,
+      mt:'11,45 €/jour',mn:0,org:'OFII',
+      regle:'Pour les bénéficiaires de la protection subsidiaire en attente de régularisation',
+      li:[{l:'Statut réfugié / protection subsidiaire',v:'✓'},{l:'Résultat',v:'Demande OFII',t:1}]
+    });
+  }
+
+  /* Visale */
+  if(P.log==='locataire'&&(P.age<30||P.emp==='salarie')){
+    L.push({id:'visale',nom:'Visale — Garantie locative Action Logement',nomC:'Visale',cls:'clog',ok:true,
+      mt:'Garantie loyers impayés',mn:0,org:'Action Logement',
+      regle:'Caution gratuite pour les moins de 30 ans ou salariés entrant dans l\'emploi',
+      li:[{l:'Condition âge (< 30 ans)',v:P.age<30?'✓ ('+P.age+' ans)':'✗'},{l:'Ou salarié',v:P.emp==='salarie'?'✓':'✗'},{l:'Résultat',v:'Éligible — demande visale.fr',t:1}]
+    });
+  }
+
+  return L;
+}
+
+/* ── RENDU FICHE ── */
+function render(){
+  const P=snap(),apl=calcAPL(P),aides=buildAides(P,apl);
+  const elig=aides.filter(a=>a.ok);
+  const total=elig.filter(a=>a.mn>0&&!a.ponctuel).reduce((s,a)=>s+a.mn,0);
+  const ponctuels=elig.filter(a=>a.ok&&a.ponctuel);
+  const famL={seul:'Personne seule',couple:'En couple (marié/PACS)',concubin:'En concubinage',parent_solo:'Parent solo',famille:'Famille'};
+  const logL={locataire:'Locataire',proprietaire:'Propriétaire',heberge:'Hébergé(e)',sans_domicile:'Sans domicile fixe'};
+  const nomAffiche=P.prenom||(famL[P.fam]+' · '+P.age+' ans');
+  const initiales=P.prenom?P.prenom.substring(0,2).toUpperCase():P.age+'a';
+
+  let html=`<div class="fiche-hdr">
+    <div class="fav">${initiales}</div>
+    <div style="flex:1"><div class="fnom">${nomAffiche}</div><div class="fsub">${empLabel(P.emp)} · ${logL[P.log]}${P.enfants>0?' · '+P.enfants+' enfant'+(P.enfants>1?'s':'')+(P.agesEnf&&P.agesEnf.length?' ('+P.agesEnf.join(', ')+' ans)':''):''}</div></div>
+    <div class="ftot"><div class="ftotlbl">Total estimé</div><div class="ftotval">${total>0?Math.round(total)+' €/mois':'—'}</div></div>
+  </div>
+  <div class="ftags">
+    <span class="ftag">Revenus : ${P.rev.toLocaleString('fr-FR')} €/mois</span>
+    ${P.enfants>0?`<span class="ftag">${P.enfants} enfant${P.enfants>1?'s':''}</span>`:''}
+    ${P.log==='locataire'?`<span class="ftag">Loyer ${P.loyer} € · Zone ${P.zone}</span>`:''}
+    <span class="ftag">${elig.length} aide${elig.length>1?'s':''} éligible${elig.length>1?'s':''} / ${aides.length} étudiées</span>
+  </div>
+  <div class="legend">
+    <span class="leg-item"><span class="leg-dot" style="background:var(--blue)"></span>Minima sociaux</span>
+    <span class="leg-item"><span class="leg-dot" style="background:var(--green)"></span>Famille</span>
+    <span class="leg-item"><span class="leg-dot" style="background:var(--violet)"></span>Logement</span>
+    <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>Emploi</span>
+    <span class="leg-item"><span class="leg-dot" style="background:var(--red)"></span>Santé</span>
+  </div>`;
+
+  aides.forEach((a,i)=>{
+    const nok=a.nok_why&&a.nok_why.length?`<div class="nok-reason">Pourquoi non éligible : ${a.nok_why.join(' · ')}</div>`:'';
+    html+=`<div class="aide-block ${a.cls}${!a.ok?' cnok':''}" style="animation-delay:${i*0.03}s">
+      <div class="ah"><div class="anom">${a.nom}</div><div class="amt${!a.ok?' nok':''}">${a.ok?a.mt:'Non éligible'}</div></div>
+      <table class="ctable">${(a.li||[]).map(l=>`<tr class="${l.t?'tot'+(a.ok?'':' nok'):''}"><td>${l.l}</td><td>${l.v}</td></tr>`).join('')}</table>
+      ${!a.ok&&nok?nok:''}
+      ${a.regle?`<div class="brule">${a.regle}</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.3rem;margin-top:.35rem">
+        <div class="org">${a.org}</div>
+        ${a.ok?`<button class="btncourrier" onclick="ouvrirCourrier('${a.id}','${esc2(a.nom)}','${esc2(a.org)}')">✉️ Courrier</button>`:''}
+      </div>
+    </div>`;
+  });
+
+  html+=`<div class="ftotal-bar">
+    <div class="ftleft">Total mensuel estimé<br><span style="font-size:10px;color:var(--ink3)">${elig.filter(a=>a.mn>0&&!a.ponctuel).map(a=>a.nomC).join(' + ')||'Aucune aide mensuelle éligible'}</span></div>
+    <div class="ftright">${total>0?Math.round(total)+' €/mois':'—'}</div>
+  </div>
+  ${ponctuels.length?`<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:var(--r);padding:.7rem 1.1rem;margin-top:.5rem;font-size:12px;color:#c0392b">
+    <div style="font-weight:500;margin-bottom:.25rem">Aides ponctuelles (hors total mensuel)</div>
+    ${ponctuels.map(a=>'<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+a.nom+'</span><span style="font-weight:500">'+a.mt+'</span></div>').join('')}
+  </div>`:''}
+  <p class="disc">${aides.length} aides étudiées · ${elig.length} éligible${elig.length>1?'s':''} · Barèmes 2025 · Sans valeur juridique<br>
+  Consultez la <a href="https://wwwd.caf.fr/wps/portal/caffr/simulateursdroits" target="_blank" style="color:var(--red)">CAF</a>, CPAM ou France Travail pour une évaluation officielle.</p>`;
+
+  document.getElementById('fiche-container').innerHTML=html;
+}
+
+function empLabel(e){return{salarie:'Salarié(e)',chomage:'Sans emploi',independant:'Indépendant(e)',retraite:'Retraité(e)',etudiant:'Étudiant(e)',invalide:'Invalidité'}[e]||e;}
+function esc2(s){return(s||'').replace(/'/g,"\\'");}
+
+/* ── COURRIER ── */
+function ouvrirCourrier(id,nom,org){
+  const P=snap();
+  document.getElementById('modal-title').textContent='Courrier — '+nom;
+  document.getElementById('modal-sub').textContent='Lettre à adresser à : '+org;
+  document.getElementById('copy-btn').style.display='none';document.getElementById('print-btn').style.display='none';
+  document.getElementById('modal').classList.add('open');
+  const txt=genModele(id,P,nom,org);
+  afficherCourrier(txt);
+}
+
+function genModele(id,P,nom,org){
+  const prenom=P.prenom||'[PRÉNOM NOM]';
+  const date=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  const zL={1:'Zone 1 — Île-de-France',2:'Zone 2 — grande agglomération',3:'Zone 3 — reste du territoire'}[P.zone]||'';
+  const famL={seul:'personne seule',couple:'en couple (marié/pacsé)',concubin:'en concubinage',parent_solo:'parent isolé(e)',famille:'famille'}[P.fam]||P.fam;
+  const empL2={salarie:'salarié(e)',chomage:'demandeur/demandeuse d\'emploi',independant:'travailleur/travailleuse indépendant(e)',retraite:'retraité(e)',etudiant:'étudiant(e)'}[P.emp]||P.emp;
+
+  const entete=`${prenom}
+[ADRESSE COMPLÈTE]
+[CODE POSTAL — VILLE]
+[TÉLÉPHONE]
+[EMAIL]
+
+${org}
+[ADRESSE DE L'ORGANISME]
+
+${date}
+
+`;
+
+  const conge=`\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\n${prenom}`;
+
+  const modeles={
+    rsa:`${entete}Objet : Demande d'attribution du Revenu de Solidarité Active (RSA)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution du Revenu de Solidarité Active (RSA), conformément aux dispositions de l'article L262-1 et suivants du Code de l'action sociale et des familles.
+
+Je suis actuellement ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €. Cette situation me place en dessous du seuil d'éligibilité au RSA, fixé à 1 100 € mensuels pour mon foyer.
+
+Je remplis l'ensemble des conditions prévues par la réglementation en vigueur : résidence stable et régulière en France, absence de ressources suffisantes, et engagement à participer aux actions d'insertion définies conjointement avec votre organisme.
+
+Je joins à la présente les pièces justificatives nécessaires à l'instruction de mon dossier.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Attestation de situation Pôle Emploi / France Travail${P.enfants>0?'\n— Acte(s) de naissance de l\'enfant / des enfants à charge':''}
+— Tout document attestant de la composition du foyer
+${conge}`,
+
+    prime_activite:`${entete}Objet : Demande d'attribution de la Prime d'activité
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de la Prime d'activité, dispositif instauré par la loi du 17 août 2015, destiné à soutenir le pouvoir d'achat des travailleurs à revenus modestes.
+
+Je suis actuellement ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes revenus nets mensuels s'élèvent à ${P.rev} €. Cette situation me permet de prétendre à la Prime d'activité, dont le montant forfaitaire 2025 est fixé à 633,21 €.
+
+Je remplis les conditions d'éligibilité : exercice d'une activité professionnelle salariée, résidence en France, et ressources inférieures au plafond prévu.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Bulletins de salaire des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)${P.enfants>0?'\n— Justificatifs relatifs aux enfants à charge':''}
+${conge}`,
+
+    apl:`${entete}Objet : Demande d'Aide Personnalisée au Logement (APL)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Aide Personnalisée au Logement (APL), conformément aux articles L351-1 et suivants du Code de la construction et de l'habitation.
+
+Je suis locataire d'un logement situé en ${zL}, pour un loyer mensuel de ${P.loyer} € hors charges. Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €.
+
+Ces éléments me placent dans les conditions d'éligibilité à l'APL, dont le montant est calculé selon la formule officielle CAF (barèmes 2025, arrêté du 30 décembre 2024) en fonction de mon loyer plafonné, du forfait charges et de ma participation personnelle.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Contrat de bail en cours
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)
+— Attestation du bailleur (numéro de convention si logement HLM)
+${conge}`,
+
+    asf:`${entete}Objet : Demande d'Allocation de Soutien Familial (ASF)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Soutien Familial (ASF), conformément aux articles L523-1 et suivants du Code de la sécurité sociale.
+
+J'élève seul(e) ${P.enfants} enfant(s) à charge, en l'absence de contribution de l'autre parent. Cette situation m'ouvre droit à l'ASF, dont le montant est fixé à 199,19 € par enfant et par mois pour l'année 2025, sans condition de ressources.
+
+Je certifie que l'autre parent ne contribue pas à l'entretien de l'enfant / des enfants, et que je n'ai pas engagé de procédure de pension alimentaire aboutissant à un versement régulier.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte(s) de naissance de l'enfant / des enfants
+— Jugement de divorce ou séparation (si existant)
+— Attestation sur l'honneur de non-versement de pension alimentaire
+${conge}`,
+
+    af:`${entete}Objet : Demande d'Allocations Familiales
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution des Allocations Familiales, conformément aux articles L521-1 et suivants du Code de la sécurité sociale.
+
+J'ai ${P.enfants} enfant(s) à charge de moins de 20 ans. Ces allocations sont versées dès le deuxième enfant, sans condition de ressources, avec une modulation selon le niveau de revenus depuis 2015. Mes revenus annuels s'élèvent à environ ${P.rev*12} €.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte(s) de naissance de chaque enfant à charge
+— Justificatifs de ressources (avis d'imposition N-1)
+${conge}`,
+
+    paje:`${entete}Objet : Demande de Prestation d'Accueil du Jeune Enfant — Allocation de base (PAJE)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'allocation de base de la Prestation d'Accueil du Jeune Enfant (PAJE), conformément aux articles L531-1 et suivants du Code de la sécurité sociale.
+
+J'ai un enfant de moins de 3 ans à charge. Je suis ${empL2}, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €, ce qui me place sous le plafond de ressources applicable pour l'année 2025.
+
+Le montant de l'allocation de base s'élève à 185 € par mois.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Acte de naissance de l'enfant
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    ars:`${entete}Objet : Demande d'Allocation de Rentrée Scolaire (ARS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Rentrée Scolaire (ARS), conformément aux articles L543-1 et suivants du Code de la sécurité sociale.
+
+J'ai ${P.enfants} enfant(s) scolarisé(s) âgé(s) de 6 à 18 ans. Je suis ${empL2}, ${famL}, et mes ressources annuelles s'élèvent à environ ${P.rev*12} €, inférieures au plafond prévu. L'ARS est versée chaque année en août.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Certificat(s) de scolarité pour l'année en cours
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    ass:`${entete}Objet : Demande d'Allocation de Solidarité Spécifique (ASS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Solidarité Spécifique (ASS), conformément aux articles L5423-1 et suivants du Code du travail.
+
+Mes droits à l'Allocation de Retour à l'Emploi (ARE) sont désormais épuisés. Je suis à la recherche active d'un emploi et justifie de plus de 5 années d'activité salariée au cours des 10 dernières années. Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €.
+
+L'ASS s'élève à 17,59 € par jour, soit environ 527 € par mois pour 30 jours.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Attestation d'épuisement des droits ARE (France Travail)
+— Justificatifs d'activité salariée sur les 10 dernières années (bulletins de salaire, attestations employeur)
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`,
+
+    css:`${entete}Objet : Demande de Complémentaire Santé Solidaire (CSS)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de la Complémentaire Santé Solidaire (CSS), anciennement CMU complémentaire, conformément aux articles L861-1 et suivants du Code de la sécurité sociale.
+
+Je ne bénéficie d'aucune complémentaire santé à ce jour. Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €, inférieures au plafond CSS 2025 (environ 1 300 €/mois pour une personne seule).
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Avis d'imposition ou de non-imposition (N-1)
+— Justificatifs de ressources des 3 derniers mois
+— Attestation de droits à l'Assurance Maladie
+${conge}`,
+
+    aah:`${entete}Objet : Demande d'Allocation aux Adultes Handicapés (AAH)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation aux Adultes Handicapés (AAH), conformément aux articles L821-1 et suivants du Code de la sécurité sociale.
+
+Je suis reconnu(e) en situation de handicap avec un taux d'incapacité permanente d'au moins 80 %, constaté par la Maison Départementale des Personnes Handicapées (MDPH). Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €, inférieures au plafond d'éligibilité.
+
+Le montant maximum de l'AAH pour 2025 est fixé à 971,37 €/mois.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Notification de décision MDPH (taux d'incapacité)
+— Avis d'imposition ou de non-imposition (N-1)
+— Justificatifs de ressources des 3 derniers mois
+${conge}`,
+
+    aspa:`${entete}Objet : Demande d'Allocation de Solidarité aux Personnes Âgées (ASPA — Minimum Vieillesse)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Solidarité aux Personnes Âgées (ASPA), conformément aux articles L815-1 et suivants du Code de la sécurité sociale.
+
+Je suis retraité(e), âgé(e) de ${P.age} ans, et mes revenus mensuels s'élèvent à ${P.rev} €, inférieurs au plafond de l'ASPA fixé à 1 012 €/mois pour une personne seule en 2025. L'ASPA viendrait compléter ma pension à hauteur de ${Math.max(0,1012-P.rev)} €/mois.
+
+Je prends note que l'ASPA est récupérable sur succession pour les montants versés au-delà d'un actif net de 39 000 €.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Notification de pension de retraite
+— Dernier avis d'imposition
+— RIB et coordonnées de la caisse de retraite
+${conge}`,
+
+    arce:`${entete}Objet : Demande d'Aide à la Reprise ou à la Création d'Entreprise (ARCE) et d'Exonération de Charges (ACRE)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter le bénéfice de l'Aide à la Reprise ou à la Création d'Entreprise (ARCE) et de l'Aide aux Créateurs et Repreneurs d'Entreprise (ACRE), dans le cadre de mon projet de création/reprise d'activité.
+
+Je suis actuellement demandeur/demandeuse d'emploi indemnisé(e) par l'ARE. Je souhaite créer ou reprendre une entreprise et bénéficier, à ce titre, du versement en capital de 60 % de mes droits ARE restants (ARCE), ainsi que de l'exonération partielle de charges sociales pendant la première année d'activité (ACRE).
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Attestation de droits ARE en cours (France Travail)
+— Justificatif d'immatriculation de l'entreprise (Kbis, extrait SIRENE)
+— Business plan ou note de présentation du projet
+— Formulaire de demande ARCE (disponible sur francetravail.fr)
+— Formulaire ACRE (disponible sur urssaf.fr)
+${conge}`,
+
+    ajpa:`${entete}Objet : Demande d'Allocation Journalière du Proche Aidant (AJPA)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation Journalière du Proche Aidant (AJPA), conformément aux articles L168-8 et suivants du Code de la sécurité sociale.
+
+Je suis proche aidant d'une personne dépendante ou handicapée nécessitant mon assistance régulière. Je souhaite bénéficier du congé de proche aidant et de l'indemnisation journalière correspondante, fixée à 64 € par jour pour 2025, dans la limite de 66 jours sur l'ensemble de ma vie professionnelle.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatif du lien avec la personne aidée
+— Attestation du médecin ou notification MDPH concernant la personne aidée
+— Accord de l'employeur pour le congé de proche aidant (si salarié)
+${conge}`,
+
+    visale:`${entete}Objet : Demande de Garantie Visale (Caution locative)
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter la garantie Visale, dispositif de cautionnement gratuit proposé par Action Logement, conformément à la convention entre l'État et Action Logement.
+
+Je suis ${empL2}, âgé(e) de ${P.age} ans, et souhaite bénéficier de la garantie Visale pour mon projet de location. Cette garantie couvre les loyers impayés et les dégradations locatives, sans frais pour le locataire.
+
+Je remplis les conditions d'éligibilité : ${P.age<30?'moins de 30 ans':'salarié(e) entrant dans l\'emploi'}.
+
+Démarche : La demande Visale s'effectue exclusivement en ligne sur visale.fr — ce courrier peut accompagner votre dossier bailleur.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Visa Visale obtenu sur visale.fr
+— Contrat de travail ou promesse d'embauche
+— Justificatifs de revenus
+${conge}`,
+  };
+
+  return modeles[id]||`${entete}Objet : Demande — ${nom}
+
+Madame, Monsieur,
+
+Je me permets de vous adresser la présente afin de solliciter le bénéfice de l'aide suivante : ${nom}.
+
+Je suis ${empL2}, âgé(e) de ${P.age} ans, ${famL}${P.enfants>0?' avec '+P.enfants+' enfant(s) à charge':''}, et mes ressources mensuelles s'élèvent à ${P.rev} €.${P.log==='locataire'?' Je suis locataire en '+zL+', pour un loyer de '+P.loyer+' €/mois.':''}
+
+Je vous serais reconnaissant(e) de bien vouloir étudier ma demande et de m'informer des pièces complémentaires éventuellement nécessaires.
+
+Pièces jointes :
+— Pièce d'identité en cours de validité
+— Justificatif de domicile de moins de 3 mois
+— Relevé d'identité bancaire (RIB)
+— Justificatifs de ressources des 3 derniers mois
+— Avis d'imposition ou de non-imposition (N-1)
+${conge}`;
+}
+function afficherCourrier(txt){
+  document.getElementById('letter-container').innerHTML=`<div class="letter-box" id="ltxt">${txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+  document.getElementById('copy-btn').style.display='inline-block';document.getElementById('print-btn').style.display='inline-block';
+}
+function copyCourrier(){const t=document.getElementById('ltxt');if(!t)return;navigator.clipboard.writeText(t.textContent).then(()=>{const b=document.getElementById('copy-btn');b.textContent='✅ Copié !';setTimeout(()=>b.textContent='📋 Copier',2000);});}
+function imprimerCourrier(){const t=document.getElementById('ltxt');if(!t)return;const w=window.open('','_blank');w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Courrier</title><style>body{font-family:Arial,sans-serif;max-width:700px;margin:2rem auto;font-size:13px;line-height:1.8}pre{white-space:pre-wrap;font-family:inherit}</style></head><body><pre>${t.textContent}</pre></body></html>`);w.document.close();w.print();}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+/* ── LISTENERS ── */
+function uS(id,outId,fmt,cb){
+  const el=document.getElementById(id),out=document.getElementById(outId);
+  el.addEventListener('input',()=>{if(out)out.textContent=fmt(+el.value);if(cb)cb();render();});
+  if(out)out.textContent=fmt(+el.value);
+}
+uS('age','age-out',v=>v+' ans');
+uS('rev','rev-out',v=>v.toLocaleString('fr-FR')+' €/mois');
+uS('enf','enf-out',v=>v===0?'0 enfant':v===1?'1 enfant':v+' enfants',updAgesGrp);
+uS('loyer','loyer-out',v=>v.toLocaleString('fr-FR')+' €/mois');
+document.querySelectorAll('input[name=fam],input[name=emp],input[name=zone],input[name=are]').forEach(r=>r.addEventListener('change',render));
+document.querySelectorAll('input[name=log]').forEach(r=>r.addEventListener('change',()=>{updLog();render();}));
+document.querySelectorAll('#spec .co').forEach(l=>l.querySelector('input').addEventListener('change',function(){l.classList.toggle('ck',this.checked);render();}));
+
+
+/* ── CODE D'ACCÈS ── */
+const CODE_SECRET='1952';
+let lockInput='';
+function lockKey(k){
+  if(lockInput.length>=4)return;
+  lockInput+=k;
+  for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d){d.classList.toggle('filled',i<lockInput.length);d.classList.remove('error');}}
+  if(lockInput.length===4){
+    if(lockInput===CODE_SECRET){
+      document.getElementById('lock-screen').classList.add('hidden');
+      loadP('sophie');
+    } else {
+      for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d)d.classList.add('error');}
+      document.getElementById('lock-error').textContent='Code incorrect — réessayez';
+      setTimeout(()=>{lockInput='';for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d){d.classList.remove('filled','error');}}document.getElementById('lock-error').textContent='';},900);
+    }
+  }
+}
+function lockDel(){
+  if(!lockInput.length)return;
+  lockInput=lockInput.slice(0,-1);
+  for(let i=0;i<4;i++){const d=document.getElementById('d'+i);if(d)d.classList.toggle('filled',i<lockInput.length);}
+  document.getElementById('lock-error').textContent='';
+}
+// loadP appelé après saisie du code
+</script>
+</body>
+</html>
