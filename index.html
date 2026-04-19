@@ -544,12 +544,24 @@ function buildAides(P,apl){
   }
 
   /* Visale */
-  if(P.log==='locataire'&&(P.age<30||P.emp==='salarie')){
-    L.push({id:'visale',nom:'Visale — Garantie locative Action Logement',nomC:'Visale',cls:'clog',ok:true,
-      mt:'Garantie loyers impayés',mn:0,org:'Action Logement',
-      regle:'Caution gratuite pour les moins de 30 ans ou salariés entrant dans l\'emploi',
-      li:[{l:'Condition âge (< 30 ans)',v:P.age<30?'✓ ('+P.age+' ans)':'✗'},{l:'Ou salarié',v:P.emp==='salarie'?'✓':'✗'},{l:'Résultat',v:'Éligible — demande visale.fr',t:1}]
-    });
+  const visaleJeune=P.age<=30;
+  const visaleSalarie=P.emp==='salarie'&&P.rev<=1710;
+  const visaleOk=P.log==='locataire'&&(visaleJeune||visaleSalarie);
+  L.push({id:'visale',nom:'Visale — Garantie locative Action Logement',nomC:'Visale',cls:'clog',ok:visaleOk,
+    mt:visaleOk?'Garantie loyers impayés (gratuit)':'Non éligible',mn:0,org:'Action Logement',
+    regle:'18–30 ans (tout statut) OU salarié privé ≤ 1 710 €/mois · Demande avant signature du bail sur visale.fr',
+    nok_why:!visaleOk?[
+      P.log!=='locataire'&&'Réservé aux locataires',
+      !visaleJeune&&!visaleSalarie&&P.age>30&&P.emp!=='salarie'&&'Plus de 30 ans et non salarié — non éligible',
+      !visaleJeune&&P.emp==='salarie'&&P.rev>1710&&'Plus de 30 ans et revenus > 1 710 €/mois',
+    ].filter(Boolean):null,
+    li:[
+      {l:'Moins de 30 ans (tout statut)',v:visaleJeune?'✓ ('+P.age+' ans)':'✗ ('+P.age+' ans)'},
+      {l:'Ou salarié privé ≤ 1 710 €/mois',v:visaleSalarie?'✓ ('+P.rev+' €/mois)':P.emp==='salarie'?'✗ ('+P.rev+' € > 1 710 €)':'✗ (non salarié)'},
+      {l:'Statut locataire',v:P.log==='locataire'?'✓':'✗ ('+P.log+')'},
+      {l:'Résultat',v:visaleOk?'Éligible — demande sur visale.fr avant bail':'Non éligible',t:1}
+    ]
+  });
   }
 
   return L;
@@ -894,7 +906,7 @@ Je me permets de vous adresser la présente afin de solliciter la garantie Visal
 
 Je suis ${empL2}, âgé(e) de ${P.age} ans, et souhaite bénéficier de la garantie Visale pour mon projet de location. Cette garantie couvre les loyers impayés et les dégradations locatives, sans frais pour le locataire.
 
-Je remplis les conditions d'éligibilité : ${P.age<30?'moins de 30 ans':'salarié(e) entrant dans l\'emploi'}.
+Je remplis les conditions d'éligibilité Visale : ${P.age<=30?'moins de 30 ans (tout statut)':P.emp==='salarie'&&P.rev<=1710?'salarié(e) du secteur privé avec revenus ≤ 1 710 €/mois':'locataire éligible'}.
 
 Démarche : La demande Visale s'effectue exclusivement en ligne sur visale.fr — ce courrier peut accompagner votre dossier bailleur.
 
