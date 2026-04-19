@@ -466,10 +466,10 @@ function buildAides(P,apl){
   /* ASS */
   const assOk=P.emp==='chomage'&&P.are==='epuise'&&P.age>30;
   L.push({id:'ass',nom:'ASS — Allocation de Solidarité Spécifique',nomC:'ASS',cls:'ce',ok:assOk,
-    mt:assOk?'527 €/mois':'Non éligible',mn:assOk?527:0,org:'France Travail',
-    regle:"17,59 €/jour · 5 ans d'activité sur les 10 dernières années requis",
+    mt:assOk?'584 €/mois (19,48 €/jour)':'Non éligible',mn:assOk?584:0,org:'France Travail',
+    regle:"19,48 €/jour (décret n°2026-219 du 30/03/2026) · 5 ans d'activité sur les 10 dernières années requis",
     nok_why:!assOk?[P.emp!=='chomage'&&'Réservée aux demandeurs d\'emploi — vous n\'êtes pas en situation de chômage',P.are==='non'&&'Vous n\'avez pas ouvert de droits ARE — l\'ASS prend le relais en fin de droits',P.are==='oui'&&'Vos droits ARE sont toujours ouverts — l\'ASS prend le relais après épuisement',P.age<=30&&'Condition d\'âge : plus de 30 ans requis'].filter(Boolean):null,
-    li:[{l:'Statut sans emploi',v:P.emp==='chomage'?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'ARE épuisés',v:P.are==='epuise'?'✓':'✗ ('+P.are+')'},{l:'Âge > 30 ans',v:P.age>30?'✓':'✗ ('+P.age+' ans)'},{l:'Résultat',v:assOk?'527 €/mois (30 j.)':'Non éligible',t:1}]
+    li:[{l:'Statut sans emploi',v:P.emp==='chomage'?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'ARE épuisés',v:P.are==='epuise'?'✓':'✗ ('+P.are+')'},{l:'Âge > 30 ans',v:P.age>30?'✓':'✗ ('+P.age+' ans)'},{l:'Résultat',v:assOk?'584,40 €/mois (30 j.)':'Non éligible',t:1}]
   });
 
   /* CSS */
@@ -485,12 +485,12 @@ function buildAides(P,apl){
 
   /* AAH */
   if(P.handicap){
-    const aahMt=Math.max(0,971-P.rev*0.4);
+    const aahMt=Math.max(0,1041.59-P.rev*0.4);
     L.push({id:'aah',nom:'AAH — Allocation Adultes Handicapés',nomC:'AAH',cls:'cs',ok:P.rev<2000,
       mt:P.rev<2000?Math.round(aahMt)+' €/mois':'Non éligible',mn:P.rev<2000?aahMt:0,org:'CAF / MDPH',
-      regle:'Taux MDPH ≥ 80 % · Montant max 971,37 € (2025)',
+      regle:'Taux MDPH ≥ 80 % · Montant max 1 041,59 €/mois (décret n°2026-229 du 30/03/2026)',
       nok_why:P.rev>=2000?['Revenus > 2 000 €/mois (plafond AAH)']:null,
-      li:[{l:'Handicap reconnu MDPH',v:'✓'},{l:'Condition revenus (< 2 000 €)',v:P.rev<2000?'✓':'✗'},{l:'Montant estimé',v:P.rev<2000?Math.round(aahMt)+' €/mois':'Non éligible',t:1}]
+      li:[{l:'Handicap reconnu MDPH',v:'✓'},{l:'Condition revenus (< 2 000 €)',v:P.rev<2000?'✓':'✗'},{l:'Montant estimé',v:P.rev<2000?Math.round(aahMt)+' €/mois (déconjugalisée depuis oct. 2023)':'Non éligible',t:1}]
     });
   }
 
@@ -506,13 +506,13 @@ function buildAides(P,apl){
 
   /* ASPA */
   if(P.emp==='retraite'&&P.age>=65){
-    const aspaOk=P.rev<1012;
-    const aspaMt=aspaOk?Math.max(0,1012-P.rev):0;
+    const aspaOk=P.rev<1043.59;
+    const aspaMt=aspaOk?Math.max(0,1043.59-P.rev):0;
     L.push({id:'aspa',nom:'ASPA — Minimum Vieillesse',nomC:'ASPA',cls:'cl',ok:aspaOk,
       mt:aspaOk?Math.round(aspaMt)+' €/mois':'Non éligible',mn:aspaMt,org:'CARSAT',
-      regle:'Complète la retraite jusqu\'à 1 012 €/mois · Récupérable sur succession si actif > 39 000 €',
+      regle:'Complète la retraite jusqu\'à 1 043,59 €/mois (avril 2026) · Récupérable sur succession si actif > 39 000 €',
       nok_why:!aspaOk?['Pension > 1 012 €/mois — l\'ASPA complète les retraites insuffisantes jusqu\'à ce plafond']:null,
-      li:[{l:'Plafond ASPA 2025',v:'1 012 €/mois'},{l:'Pension actuelle',v:P.rev+' €/mois'},{l:'Complément versé',v:aspaOk?Math.round(aspaMt)+' €/mois':'—',t:1}]
+      li:[{l:'Plafond ASPA (avril 2026)',v:'1 043,59 €/mois'},{l:'Pension actuelle',v:P.rev+' €/mois'},{l:'Complément versé',v:aspaOk?Math.round(aspaMt)+' €/mois':'—',t:1}]
     });
   }
 
@@ -786,7 +786,7 @@ Je me permets de vous adresser la présente afin de solliciter l'attribution de 
 
 Mes droits à l'Allocation de Retour à l'Emploi (ARE) sont désormais épuisés. Je suis à la recherche active d'un emploi et justifie de plus de 5 années d'activité salariée au cours des 10 dernières années. Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €.
 
-L'ASS s'élève à 17,59 € par jour, soit environ 527 € par mois pour 30 jours.
+L'ASS s'élève à 19,48 € par jour (décret n°2026-219 du 30/03/2026), soit 584,40 € par mois pour 30 jours.
 
 Pièces jointes :
 — Pièce d'identité en cours de validité
@@ -822,7 +822,7 @@ Je me permets de vous adresser la présente afin de solliciter l'attribution de 
 
 Je suis reconnu(e) en situation de handicap avec un taux d'incapacité permanente d'au moins 80 %, constaté par la Maison Départementale des Personnes Handicapées (MDPH). Je suis âgé(e) de ${P.age} ans, ${famL}, et mes ressources mensuelles s'élèvent à ${P.rev} €, inférieures au plafond d'éligibilité.
 
-Le montant maximum de l'AAH pour 2025 est fixé à 971,37 €/mois.
+Le montant maximum de l'AAH depuis le 1er avril 2026 est fixé à 1 041,59 €/mois (décret n°2026-229 du 30/03/2026).
 
 Pièces jointes :
 — Pièce d'identité en cours de validité
@@ -839,7 +839,7 @@ Madame, Monsieur,
 
 Je me permets de vous adresser la présente afin de solliciter l'attribution de l'Allocation de Solidarité aux Personnes Âgées (ASPA), conformément aux articles L815-1 et suivants du Code de la sécurité sociale.
 
-Je suis retraité(e), âgé(e) de ${P.age} ans, et mes revenus mensuels s'élèvent à ${P.rev} €, inférieurs au plafond de l'ASPA fixé à 1 012 €/mois pour une personne seule en 2025. L'ASPA viendrait compléter ma pension à hauteur de ${Math.max(0,1012-P.rev)} €/mois.
+Je suis retraité(e), âgé(e) de ${P.age} ans, et mes revenus mensuels s'élèvent à ${P.rev} €, inférieurs au plafond de l'ASPA fixé à 1 012 €/mois pour une personne seule en 2025. L'ASPA viendrait compléter ma pension à hauteur de ${Math.max(0,1043.59-P.rev)} €/mois.
 
 Je prends note que l'ASPA est récupérable sur succession pour les montants versés au-delà d'un actif net de 39 000 €.
 
