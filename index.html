@@ -392,23 +392,24 @@ function buildAides(P,apl){
 
   /* RSA */
   const rsaOk=P.rev<1100&&!['salarie','retraite'].includes(P.emp)&&P.age>=25;
-  const rsaMt=rsaOk?Math.max(0,(P.fam==='parent_solo'?847.61:635.71)+P.enfants*127-P.rev*0.62):0;
+  const rsaSocle=P.fam==='parent_solo'?836.85:P.fam==='couple'||P.fam==='concubin'?977.54:651.69;
+  const rsaMt=rsaOk?Math.max(0,rsaSocle+P.enfants*260.68-P.rev*0.62):0;
   L.push({id:'rsa',nom:'RSA — Revenu de Solidarité Active',nomC:'RSA',cls:'cl',ok:rsaOk,
     mt:Math.round(rsaMt)+' €/mois',mn:rsaMt,org:'CAF',
-    regle:'Art. L262-2 CASF · Barème 2025',
+    regle:'Art. L262-2 CASF · Barème avril 2026 (décret n°2026-220)',
     nok_why:!rsaOk?[P.rev>=1100&&'Revenus > 1 100 €/mois (plafond RSA)',P.emp==='salarie'&&'Vous êtes salarié(e) — le RSA ne se cumule pas avec un emploi stable',P.emp==='retraite'&&'Retraités non éligibles au RSA',P.age<25&&'Moins de 25 ans — RSA jeunes sous conditions'].filter(Boolean):null,
-    li:rsaOk?[{l:'Socle '+(P.fam==='parent_solo'?'parent isolé':'personne seule'),v:(P.fam==='parent_solo'?'847,61':'635,71')+' €'},{l:'Supplément enfants (×127 €)',v:'+ '+(P.enfants*127)+' €'},{l:'Revenus foyer (62 %)',v:'− '+Math.round(P.rev*0.62)+' €'},{l:'RSA versé estimé',v:Math.round(rsaMt)+' €/mois',t:1}]:
+    li:rsaOk?[{l:'Socle forfaitaire '+(P.fam==='parent_solo'?'parent isolé':P.fam==='couple'||P.fam==='concubin'?'couple':'personne seule'),v:(P.fam==='parent_solo'?'836,85':P.fam==='couple'||P.fam==='concubin'?'977,54':'651,69')+' €'},{l:'Supplément enfants (×260,68 €)',v:'+ '+Math.round(P.enfants*260.68)+' €'},{l:'Revenus foyer pris en compte (62 %)',v:'− '+Math.round(P.rev*0.62)+' €'},{l:'RSA versé estimé',v:Math.round(rsaMt)+' €/mois',t:1}]:
     [{l:'Condition revenus',v:P.rev<1100?'✓':'✗ ('+P.rev+' € > 1 100 €)'},{l:'Condition statut',v:!['salarie','retraite'].includes(P.emp)?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'Condition âge',v:P.age>=25?'✓':'✗ ('+P.age+' ans < 25 ans)'},{l:'Résultat',v:'Non éligible',t:1}]
   });
 
   /* Prime d'activité */
   const paOk=P.emp==='salarie'&&P.rev<2400;
-  const paMt=paOk?Math.max(0,633.21-P.rev*0.38):0;
+  const paMt=paOk?Math.max(0,638.28-P.rev*0.38):0;
   L.push({id:'prime_activite',nom:"Prime d'activité",nomC:"Prime activité",cls:'cl',ok:paOk,
     mt:Math.round(paMt)+' €/mois',mn:paMt,org:'CAF',
-    regle:'Forfait 633,21 € − 38 % des revenus (estimation simplifiée)',
+    regle:'Forfait 638,28 € (avril 2026, décret n°2026-222 + réforme +50 €) · Estimation simplifiée',
     nok_why:!paOk?[P.emp!=='salarie'&&'Réservée aux salariés et indépendants — pas au chômage ou à la retraite',P.rev>=2400&&'Revenus > 2 400 €/mois (plafond prime activité)'].filter(Boolean):null,
-    li:paOk?[{l:'Montant forfaitaire',v:'633,21 €'},{l:'Déduction revenus (38 %)',v:'− '+Math.round(P.rev*0.38)+' €'},{l:'Prime estimée',v:Math.round(paMt)+' €/mois',t:1}]:
+    li:paOk?[{l:'Montant forfaitaire (avril 2026)',v:'638,28 €'},{l:'Déduction revenus (38 %)',v:'− '+Math.round(P.rev*0.38)+' €'},{l:'Prime estimée',v:Math.round(paMt)+' €/mois',t:1}]:
     [{l:'Condition : salarié(e)',v:P.emp==='salarie'?'✓':'✗ ('+empLabel(P.emp)+')'},{l:'Condition revenus (< 2 400 €)',v:P.rev<2400?'✓':'✗ ('+P.rev+' €)'},{l:'Résultat',v:'Non éligible',t:1}]
   });
 
@@ -424,12 +425,12 @@ function buildAides(P,apl){
 
   /* ASF */
   const asfOk=['parent_solo','seul'].includes(P.fam)&&P.enfants>=1;
-  const asfMt=asfOk?P.enfants*199.19:0;
+  const asfMt=asfOk?P.enfants*200.78:0;
   L.push({id:'asf',nom:'ASF — Allocation de Soutien Familial',nomC:'ASF',cls:'cf',ok:asfOk,
     mt:Math.round(asfMt)+' €/mois',mn:asfMt,org:'CAF',
-    regle:'199,19 €/enfant · Pas de condition de ressources',
+    regle:'200,78 €/enfant (avril 2026) · Pas de condition de ressources',
     nok_why:!asfOk?[!['parent_solo','seul'].includes(P.fam)&&'Réservée aux parents élevant seuls leurs enfants (en couple = non éligible)',P.enfants===0&&'Aucun enfant à charge déclaré'].filter(Boolean):null,
-    li:asfOk?[{l:'Montant unitaire 2025',v:'199,19 €/enfant'},{l:'Nombre d\'enfants',v:'× '+P.enfants},{l:'ASF totale',v:Math.round(asfMt)+' €/mois',t:1}]:
+    li:asfOk?[{l:'Montant unitaire avril 2026',v:'200,78 €/enfant'},{l:'Nombre d\'enfants',v:'× '+P.enfants},{l:'ASF totale',v:Math.round(asfMt)+' €/mois',t:1}]:
     [{l:'Condition : parent solo ou seul',v:['parent_solo','seul'].includes(P.fam)?'✓':'✗ (en couple)'},{l:'Condition : enfants à charge',v:P.enfants>=1?'✓':'✗ (0 enfant)'},{l:'Résultat',v:'Non éligible',t:1}]
   });
 
