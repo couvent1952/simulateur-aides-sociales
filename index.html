@@ -198,7 +198,8 @@ input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--
           <div class="fg"><label class="flabel">Situation familiale</label>
             <div class="rgrid">
               <div class="ro"><input type="radio" name="fam" id="f1" value="seul"><label for="f1"><span class="ico">🧍</span>Seul(e)</label></div>
-              <div class="ro"><input type="radio" name="fam" id="f2" value="couple"><label for="f2"><span class="ico">👫</span>Couple</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f2" value="couple"><label for="f2"><span class="ico">👫</span>Couple marié/PACS</label></div>
+              <div class="ro"><input type="radio" name="fam" id="f2b" value="concubin"><label for="f2b"><span class="ico">🤝</span>Concubin(s)</label></div>
               <div class="ro"><input type="radio" name="fam" id="f3" value="parent_solo" checked><label for="f3"><span class="ico">👩‍👦</span>Parent solo</label></div>
               <div class="ro"><input type="radio" name="fam" id="f4" value="famille"><label for="f4"><span class="ico">👨‍👩‍👧</span>Famille</label></div>
             </div>
@@ -300,7 +301,7 @@ input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--
 const APL_PL={1:[312.85,274.03,248.60],2:[363.47,319.22,289.36],3:[394.44,346.47,314.25],4:[422.65,371.05,336.60],5:[450.68,395.52,358.94]};
 const APL_FC={1:66.13,2:76.12,3:84.10,4:90.08};
 const APL_R0={1:[5235,5235,5235],2:[8138,8138,8138],3:[9480,9480,9480],4:[10822,10822,10822]};
-function nbP(P){return(P.fam==='couple'||P.fam==='famille'?2:1)+P.enfants;}
+function nbP(P){return(P.fam==='couple'||P.fam==='famille'||P.fam==='concubin'?2:1)+P.enfants;}
 function calcAPL(P){
   if(P.log!=='locataire')return null;
   const z=parseInt(P.zone)-1,n=Math.min(nbP(P),5);
@@ -435,10 +436,10 @@ function buildAides(P,apl){
   /* Allocations familiales */
   const afOk=P.enfants>=2;
   L.push({id:'af',nom:'Allocations Familiales',nomC:'AF',cls:'cf',ok:afOk,
-    mt:afOk?'178 €/mois':'Non éligible',mn:afOk?178:0,org:'CAF',
-    regle:'Dès le 2e enfant de moins de 20 ans · Modulation selon revenus depuis 2015',
+    mt:afOk?(()=>{const ra=P.rev*12;const n=P.enfants;const base=ra<57768?(n===2?176.61:n===3?403.27:403.27+(n-3)*226.66):(ra<77304?(n===2?88.31:n===3?201.64:201.64+(n-3)*113.33):(n===2?44.15:n===3?100.82:100.82+(n-3)*56.66));return Math.round(base)+' €/mois';})():'Non éligible',mn:afOk?(()=>{const ra=P.rev*12;const n=P.enfants;return ra<57768?(n===2?176.61:n===3?403.27:403.27+(n-3)*226.66):(ra<77304?(n===2?88.31:n===3?201.64:201.64+(n-3)*113.33):(n===2?44.15:n===3?100.82:100.82+(n-3)*56.66));})():0,org:'CAF',
+    regle:'Dès le 2e enfant de moins de 20 ans · 3 tranches de revenus depuis 2015 · Barème 2025',
     nok_why:!afOk?['Les allocations familiales sont versées à partir du 2e enfant à charge — avec 1 seul enfant vous n\'y avez pas droit'].filter(Boolean):null,
-    li:afOk?[{l:'Montant base (2 enfants)',v:'178,07 €'},{l:'Tranche revenus',v:P.rev*12<42000?'Tranche 1 — taux plein':'Tranche 2 — modulation'},{l:'AF versées',v:'178 €/mois',t:1}]:
+    li:afOk?[{l:'Nombre d\'enfants éligibles',v:P.enfants+' enfants'},{l:'Revenus annuels',v:(P.rev*12).toLocaleString('fr-FR')+' €/an'},{l:'Tranche',v:P.rev*12<57768?'Tranche 1 (taux plein)':P.rev*12<77304?'Tranche 2 (50 %)':'Tranche 3 (25 %)'},{l:'Montant mensuel 2025',v:(P.rev*12<57768?(P.enfants===2?'176,61':P.enfants===3?'403,27':'403,27+'):(P.rev*12<77304?(P.enfants===2?'88,31':P.enfants===3?'201,64':'201,64+'):(P.enfants===2?'44,15':P.enfants===3?'100,82':'100,82+')))+' €',t:1}]:
     [{l:'Condition : 2 enfants minimum',v:'✗ ('+P.enfants+' enfant'+(P.enfants>1?'s':'')+')'},{l:'Résultat',v:'Non éligible',t:1}]
   });
 
@@ -559,7 +560,7 @@ function render(){
   const elig=aides.filter(a=>a.ok);
   const total=elig.filter(a=>a.mn>0&&!a.ponctuel).reduce((s,a)=>s+a.mn,0);
   const ponctuels=elig.filter(a=>a.ok&&a.ponctuel);
-  const famL={seul:'Personne seule',couple:'En couple',parent_solo:'Parent solo',famille:'Famille'};
+  const famL={seul:'Personne seule',couple:'En couple (marié/PACS)',concubin:'En concubinage',parent_solo:'Parent solo',famille:'Famille'};
   const logL={locataire:'Locataire',proprietaire:'Propriétaire',heberge:'Hébergé(e)',sans_domicile:'Sans domicile fixe'};
   const nomAffiche=P.prenom||(famL[P.fam]+' · '+P.age+' ans');
   const initiales=P.prenom?P.prenom.substring(0,2).toUpperCase():P.age+'a';
@@ -629,7 +630,7 @@ function genModele(id,P,nom,org){
   const prenom=P.prenom||'[PRÉNOM NOM]';
   const date=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
   const zL={1:'Zone 1 — Île-de-France',2:'Zone 2 — grande agglomération',3:'Zone 3 — reste du territoire'}[P.zone]||'';
-  const famL={seul:'personne seule',couple:'en couple',parent_solo:'parent isolé(e)',famille:'famille'}[P.fam]||P.fam;
+  const famL={seul:'personne seule',couple:'en couple (marié/pacsé)',concubin:'en concubinage',parent_solo:'parent isolé(e)',famille:'famille'}[P.fam]||P.fam;
   const empL2={salarie:'salarié(e)',chomage:'demandeur/demandeuse d\'emploi',independant:'travailleur/travailleuse indépendant(e)',retraite:'retraité(e)',etudiant:'étudiant(e)'}[P.emp]||P.emp;
 
   const entete=`${prenom}
